@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber Snake – Validation des compétences</title>
+<style>
+  :root {
+    --bg: #0b1020;
+    --panel: #141b31;
+    --panel-2: #1c2542;
+    --text: #e6ebff;
+    --muted: #8f9bc2;
+    --accent: #3ee6a8;
+    --accent-2: #4da3ff;
+    --danger: #ff5d73;
+    --warn: #ffc857;
+    --brick: #e0663d;
+    --brick-line: #8c3a1e;
+    --grid: #121a30;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: radial-gradient(circle at top, #16204a 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+  }
+  header { text-align: center; margin-bottom: 12px; }
+  h1 { margin: 0; font-size: 1.6rem; letter-spacing: .5px; }
+  h1 span { color: var(--accent); }
+  .subtitle { color: var(--muted); margin: 4px 0 0; font-size: .95rem; }
+
+  .hud {
+    display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+    margin-bottom: 12px; width: 100%; max-width: 520px;
+  }
+  .hud .stat {
+    background: var(--panel); border: 1px solid var(--panel-2);
+    border-radius: var(--radius); padding: 8px 14px; flex: 1; min-width: 110px; text-align: center;
+  }
+  .stat .label { font-size: .72rem; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; }
+  .stat .value { font-size: 1.25rem; font-weight: 700; }
+
+  .progress { display: flex; gap: 5px; justify-content: center; margin-bottom: 12px; }
+  .progress .dot {
+    width: 22px; height: 8px; border-radius: 4px; background: var(--panel-2);
+    transition: background .3s;
+  }
+  .progress .dot.ok { background: var(--accent); }
+  .progress .dot.ko { background: var(--danger); }
+  .progress .dot.current { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+
+  .stage { position: relative; width: 100%; max-width: 520px; }
+  canvas {
+    display: block; width: 100%; height: auto; aspect-ratio: 1 / 1;
+    background: var(--grid); border-radius: var(--radius);
+    border: 2px solid var(--panel-2);
+    box-shadow: 0 10px 40px rgba(0,0,0,.45);
+    touch-action: none;
+  }
+
+  .overlay {
+    position: absolute; inset: 0; display: none;
+    align-items: center; justify-content: center;
+    background: rgba(8, 12, 26, .88); border-radius: var(--radius);
+    padding: 16px; overflow-y: auto;
+  }
+  .overlay.visible { display: flex; }
+  .card {
+    background: var(--panel); border: 1px solid var(--panel-2); border-radius: var(--radius);
+    padding: 20px; width: 100%; max-height: 100%; overflow-y: auto;
+  }
+  .card h2 { margin: 0 0 10px; font-size: 1.25rem; }
+  .card p { margin: 6px 0; line-height: 1.45; color: #cfd6f5; }
+  .card ul { margin: 8px 0; padding-left: 20px; color: #cfd6f5; line-height: 1.5; }
+
+  .tag {
+    display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; padding: 3px 10px; border-radius: 20px; margin-bottom: 10px;
+  }
+  .tag.IAM { background: rgba(77,163,255,.18); color: #7fbcff; }
+  .tag.GRC { background: rgba(255,200,87,.18); color: var(--warn); }
+  .tag.SOC { background: rgba(255,93,115,.18); color: #ff8798; }
+  .tag.IA  { background: rgba(62,230,168,.18); color: var(--accent); }
+
+  .question { font-size: 1.05rem; font-weight: 600; margin: 4px 0 14px; line-height: 1.4; }
+  .choices { display: flex; flex-direction: column; gap: 8px; }
+  .choice {
+    text-align: left; background: var(--panel-2); color: var(--text);
+    border: 2px solid transparent; border-radius: 10px; padding: 11px 14px;
+    font-size: .95rem; cursor: pointer; line-height: 1.35; font-family: inherit;
+    transition: border-color .15s, background .15s;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .choice .key {
+    flex: none; width: 24px; height: 24px; border-radius: 6px; background: var(--bg);
+    display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem;
+    color: var(--muted);
+  }
+  .choice:hover:not(:disabled) { border-color: var(--accent-2); }
+  .choice:disabled { cursor: default; }
+  .choice.correct { border-color: var(--accent); background: rgba(62,230,168,.12); }
+  .choice.wrong { border-color: var(--danger); background: rgba(255,93,115,.12); }
+  .choice.dim { opacity: .55; }
+
+  .feedback {
+    margin-top: 14px; padding: 12px 14px; border-radius: 10px; display: none;
+    font-size: .92rem; line-height: 1.45;
+  }
+  .feedback.visible { display: block; }
+  .feedback.ok { background: rgba(62,230,168,.1); border-left: 4px solid var(--accent); }
+  .feedback.ko { background: rgba(255,93,115,.1); border-left: 4px solid var(--danger); }
+
+  .btn {
+    margin-top: 14px; background: var(--accent); color: #062018; border: none;
+    border-radius: 10px; padding: 11px 20px; font-size: 1rem; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  .btn.secondary { background: var(--panel-2); color: var(--text); }
+  .hint { font-size: .8rem; color: var(--muted); margin-top: 8px; }
+
+  .verdict {
+    font-size: 1.4rem; font-weight: 800; text-align: center; padding: 14px;
+    border-radius: 10px; margin: 10px 0;
+  }
+  .verdict.ok { background: rgba(62,230,168,.14); color: var(--accent); border: 2px solid var(--accent); }
+  .verdict.ko { background: rgba(255,200,87,.1); color: var(--warn); border: 2px solid var(--warn); }
+  .big-score { font-size: 3rem; font-weight: 800; text-align: center; margin: 6px 0; }
+  .big-score small { font-size: 1.3rem; color: var(--muted); }
+  .recap { list-style: none; padding: 0 !important; margin: 10px 0 0 !important; }
+  .recap li {
+    padding: 8px 10px; border-radius: 8px; background: var(--panel-2); margin-bottom: 6px;
+    font-size: .85rem; display: flex; gap: 8px; align-items: flex-start;
+  }
+  .recap li .ico { flex: none; font-weight: 800; }
+  .recap li.ok .ico { color: var(--accent); }
+  .recap li.ko .ico { color: var(--danger); }
+  .domain-scores { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+  .domain-scores div {
+    background: var(--panel-2); border-radius: 8px; padding: 8px 4px; text-align: center; font-size: .8rem;
+  }
+  .domain-scores b { display: block; font-size: 1.05rem; }
+
+  .toast {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    background: var(--danger); color: #fff; padding: 8px 16px; border-radius: 20px;
+    font-weight: 700; font-size: .9rem; opacity: 0; transition: opacity .25s; pointer-events: none;
+  }
+  .toast.visible { opacity: 1; }
+
+  .pad { display: none; margin-top: 14px; gap: 8px; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(2, 54px); justify-content: center; }
+  .pad button {
+    background: var(--panel); color: var(--text); border: 1px solid var(--panel-2);
+    border-radius: 10px; font-size: 1.4rem; cursor: pointer;
+  }
+  .pad .up { grid-column: 2; grid-row: 1; }
+  .pad .left { grid-column: 1; grid-row: 2; }
+  .pad .down { grid-column: 2; grid-row: 2; }
+  .pad .right { grid-column: 3; grid-row: 2; }
+  @media (pointer: coarse) { .pad { display: grid; } }
+
+  footer { margin-top: 14px; color: var(--muted); font-size: .8rem; text-align: center; }
+  kbd {
+    background: var(--panel-2); border-radius: 4px; padding: 1px 6px; font-family: inherit;
+    font-size: .8rem; border: 1px solid #2b3660;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Cyber <span>Snake</span></h1>
+  <p class="subtitle">Validation des compétences – IAM · GRC · SOC · Sécurité de l'IA</p>
+</header>
+
+<div class="hud">
+  <div class="stat"><div class="label">Questions</div><div class="value" id="hudQuestions">0 / 10</div></div>
+  <div class="stat"><div class="label">Bonnes réponses</div><div class="value" id="hudScore">0</div></div>
+  <div class="stat"><div class="label">Longueur</div><div class="value" id="hudLength">3</div></div>
+</div>
+
+<div class="progress" id="progress"></div>
+
+<div class="stage">
+  <canvas id="board" width="480" height="480" aria-label="Plateau du jeu du serpent"></canvas>
+  <div class="toast" id="toast"></div>
+
+  <!-- Écran d'accueil -->
+  <div class="overlay visible" id="startOverlay">
+    <div class="card">
+      <h2>Prêt·e à valider vos compétences ?</h2>
+      <p>Guidez le serpent pour manger les <b style="color:var(--brick)">briques</b>. À chaque brique, le jeu se met en pause et vous pose une question de cybersécurité.</p>
+      <ul>
+        <li>10 questions tirées au hasard parmi 30 (IAM, GRC, SOC, sécurité de l'IA)</li>
+        <li>3 propositions : une seule est vraiment juste — méfiez-vous de celle qui l'est <i>presque</i></li>
+        <li>Plus de 8 bonnes réponses sur 10 : <b>compétences validées</b></li>
+        <li>En cas de collision, le serpent repart : seules vos réponses comptent</li>
+      </ul>
+      <p class="hint">Déplacements : <kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> ou <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · Réponses : <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> · Pause : <kbd>P</kbd> · Sur mobile : glissez ou utilisez les flèches.</p>
+      <button class="btn" id="startBtn">Commencer</button>
+    </div>
+  </div>
+
+  <!-- Question -->
+  <div class="overlay" id="questionOverlay">
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="qText">
+      <span class="tag" id="qTag">IAM</span>
+      <span class="hint" id="qNum" style="float:right"></span>
+      <div class="question" id="qText"></div>
+      <div class="choices" id="qChoices"></div>
+      <div class="feedback" id="qFeedback"></div>
+      <button class="btn" id="continueBtn" style="display:none">Continuer</button>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <div class="overlay" id="pauseOverlay">
+    <div class="card" style="text-align:center">
+      <h2>Pause</h2>
+      <p>Appuyez sur <kbd>P</kbd> ou cliquez pour reprendre.</p>
+      <button class="btn" id="resumeBtn">Reprendre</button>
+    </div>
+  </div>
+
+  <!-- Résultats -->
+  <div class="overlay" id="endOverlay">
+    <div class="card" id="endCard"></div>
+  </div>
+</div>
+
+<div class="pad" id="pad">
+  <button class="up" data-dir="up" aria-label="Haut">▲</button>
+  <button class="left" data-dir="left" aria-label="Gauche">◀</button>
+  <button class="down" data-dir="down" aria-label="Bas">▼</button>
+  <button class="right" data-dir="right" aria-label="Droite">▶</button>
+</div>
+
+<footer>Cyber Academy · Évaluation gamifiée de fin de module</footer>
+
+<script>
+(() => {
+  "use strict";
+
+  /* =========================================================
+   * Paramètres
+   * ========================================================= */
+  const QUESTIONS_PER_GAME = 10;
+  const PASS_THRESHOLD = 8;          // validé si score > PASS_THRESHOLD (soit 9 ou 10 / 10)
+  const MIN_PER_DOMAIN = 2;          // chaque domaine est représenté au moins 2 fois
+  const GRID = 20;                   // cases par côté
+  const TICK_MS = 125;               // vitesse du serpent
+
+  /* =========================================================
+   * Banque de 30 questions
+   * Pour chaque question : correct = vraiment juste,
+   * almost = presque juste, wrong = franchement fausse.
+   * ========================================================= */
+  const BANK = [
+    // ---------- IAM (8) ----------
+    { domain: "IAM",
+      q: "Que signifie le principe du moindre privilège ?",
+      correct: "N'accorder à chaque identité que les droits strictement nécessaires à sa mission, et seulement pour la durée nécessaire.",
+      almost: "Limiter les droits des utilisateurs standards, les administrateurs conservant un accès complet en permanence.",
+      wrong: "Donner les droits administrateur à tout le monde pour éviter les blocages et les tickets au support.",
+      explain: "Le moindre privilège s'applique à toutes les identités, y compris les administrateurs et les comptes techniques. Il inclut aussi une dimension temporelle (accès « juste à temps »)." },
+    { domain: "IAM",
+      q: "Qu'est-ce qu'une authentification multifacteur (MFA) ?",
+      correct: "L'utilisation d'au moins deux facteurs de catégories différentes : ce que je sais, ce que je possède, ce que je suis.",
+      almost: "La saisie de deux mots de passe différents l'un après l'autre.",
+      wrong: "L'utilisation d'un mot de passe très long, d'au moins 20 caractères.",
+      explain: "Deux mots de passe relèvent du même facteur (connaissance) : ce n'est pas du MFA. Il faut combiner des catégories distinctes, par exemple mot de passe + clé FIDO2." },
+    { domain: "IAM",
+      q: "Quel standard est principalement utilisé pour la fédération d'identité via des assertions XML signées entre un fournisseur d'identité et une application ?",
+      correct: "SAML 2.0",
+      almost: "OAuth 2.0",
+      wrong: "FTP",
+      explain: "SAML 2.0 échange des assertions XML signées pour le SSO fédéré. OAuth 2.0 est un protocole de délégation d'autorisation, pas d'authentification à proprement parler." },
+    { domain: "IAM",
+      q: "Quel protocole ajoute une couche d'identité (ID Token au format JWT) au-dessus d'OAuth 2.0 ?",
+      correct: "OpenID Connect (OIDC)",
+      almost: "SAML 2.0",
+      wrong: "SMTP",
+      explain: "OpenID Connect s'appuie sur OAuth 2.0 et ajoute l'ID Token pour authentifier l'utilisateur. SAML fait aussi de la fédération d'identité, mais ne repose pas sur OAuth." },
+    { domain: "IAM",
+      q: "Quel est l'objectif d'une campagne de recertification (revue) des accès ?",
+      correct: "Faire valider périodiquement par les managers ou propriétaires d'applications que chaque droit est toujours justifié, et retirer les droits superflus.",
+      almost: "Extraire la liste de tous les comptes actifs de l'annuaire pour l'archiver.",
+      wrong: "Réinitialiser les mots de passe de tous les utilisateurs une fois par an.",
+      explain: "Lister les comptes n'est qu'une étape : la recertification implique une validation métier et une remédiation (suppression des droits injustifiés)." },
+    { domain: "IAM",
+      q: "Un collaborateur change de service (cas « mover » du cycle Joiner-Mover-Leaver). Quelle est la bonne pratique ?",
+      correct: "Retirer les droits liés à l'ancien poste et attribuer ceux du nouveau rôle.",
+      almost: "Ajouter les droits du nouveau poste dès son arrivée dans le service.",
+      wrong: "Ne rien modifier : ses droits actuels lui seront peut-être encore utiles.",
+      explain: "Ajouter sans retirer provoque l'accumulation de privilèges (« privilege creep »), source majeure de risques et de conflits de séparation des tâches." },
+    { domain: "IAM",
+      q: "Quel est le rôle d'une solution de PAM (Privileged Access Management) ?",
+      correct: "Sécuriser, contrôler et tracer l'usage des comptes à privilèges : coffre-fort, rotation des secrets, accès juste-à-temps, enregistrement des sessions.",
+      almost: "Stocker les mots de passe des administrateurs dans un coffre-fort chiffré.",
+      wrong: "Gérer les badges d'accès physique au parking de l'entreprise.",
+      explain: "Le coffre-fort n'est qu'une brique du PAM. La valeur vient aussi du contrôle d'accès, de la rotation et de la traçabilité des sessions privilégiées." },
+    { domain: "IAM",
+      q: "Dans un modèle RBAC (Role-Based Access Control), à quoi les permissions sont-elles attribuées ?",
+      correct: "À des rôles, eux-mêmes attribués aux utilisateurs selon leur fonction.",
+      almost: "Directement à chaque utilisateur, regroupés ensuite par service.",
+      wrong: "Aux adresses IP des postes de travail.",
+      explain: "En RBAC, la permission est portée par le rôle : on gère les accès en affectant ou retirant des rôles, ce qui simplifie l'administration et les revues." },
+
+    // ---------- GRC (8) ----------
+    { domain: "GRC",
+      q: "Qu'est-ce que la norme ISO/IEC 27001 ?",
+      correct: "Une norme qui spécifie les exigences d'un système de management de la sécurité de l'information (SMSI), certifiable.",
+      almost: "Un guide de bonnes pratiques détaillant les mesures de sécurité à mettre en œuvre.",
+      wrong: "Le règlement européen sur la protection des données personnelles.",
+      explain: "Le guide de mesures détaillées est l'ISO/IEC 27002. L'ISO 27001 définit les exigences du SMSI et permet la certification." },
+    { domain: "GRC",
+      q: "Comment définit-on généralement un risque en sécurité de l'information ?",
+      correct: "La combinaison de la vraisemblance d'un scénario de menace et de la gravité de son impact.",
+      almost: "Une vulnérabilité présente sur un système d'information.",
+      wrong: "Un incident qui s'est déjà produit.",
+      explain: "Une vulnérabilité est une composante du risque, mais le risque n'existe qu'en présence d'une menace pouvant l'exploiter, et il s'évalue en vraisemblance × impact." },
+    { domain: "GRC",
+      q: "Selon le RGPD, en cas de violation de données présentant un risque pour les personnes, que doit faire le responsable de traitement ?",
+      correct: "Notifier l'autorité de contrôle (la CNIL en France) dans les 72 heures après en avoir pris connaissance.",
+      almost: "Notifier l'autorité de contrôle dans un délai d'un mois.",
+      wrong: "Rien, tant que l'entreprise n'est pas certifiée ISO 27001.",
+      explain: "Article 33 du RGPD : 72 heures. Si le risque est élevé, les personnes concernées doivent aussi être informées dans les meilleurs délais (article 34)." },
+    { domain: "GRC",
+      q: "Qu'est-ce que le risque résiduel ?",
+      correct: "Le risque qui subsiste après la mise en œuvre des mesures de traitement.",
+      almost: "Le risque que la direction a formellement accepté.",
+      wrong: "Le risque lié au recyclage des déchets électroniques.",
+      explain: "Le risque résiduel est mesuré après traitement ; c'est ensuite lui qui est soumis à l'acceptation de la direction. Les deux notions sont liées mais distinctes." },
+    { domain: "GRC",
+      q: "Quel est l'objectif principal de la directive européenne NIS 2 ?",
+      correct: "Élever le niveau de cybersécurité des entités essentielles et importantes : gestion des risques, notification des incidents, responsabilité des dirigeants.",
+      almost: "Imposer la certification ISO 27001 à toutes les entreprises européennes.",
+      wrong: "Réglementer l'usage des cookies sur les sites web.",
+      explain: "NIS 2 impose des mesures de gestion des risques et des obligations de notification, mais n'exige pas de certification ISO 27001." },
+    { domain: "GRC",
+      q: "Qu'est-ce qu'EBIOS Risk Manager ?",
+      correct: "Une méthode d'appréciation et de traitement des risques numériques publiée par l'ANSSI.",
+      almost: "La norme internationale de référence pour la gestion des risques de sécurité de l'information.",
+      wrong: "Un logiciel antivirus français.",
+      explain: "La norme internationale correspondante est l'ISO/IEC 27005. EBIOS RM est la méthode de l'ANSSI, compatible avec cette norme." },
+    { domain: "GRC",
+      q: "Que signifie « transférer » un risque ?",
+      correct: "Partager tout ou partie de sa charge avec un tiers (assurance, prestataire), l'organisation en restant responsable.",
+      almost: "Confier le risque à un tiers qui en devient entièrement et seul responsable.",
+      wrong: "Ignorer le risque en espérant qu'il ne se réalise pas.",
+      explain: "Le transfert partage les conséquences (souvent financières), mais la responsabilité, notamment réglementaire, reste à l'organisation." },
+    { domain: "GRC",
+      q: "Dans un plan de continuité d'activité, que représente le RTO (Recovery Time Objective) ?",
+      correct: "La durée maximale d'interruption admissible avant la reprise d'un service.",
+      almost: "La perte de données maximale admissible, exprimée en durée.",
+      wrong: "La fréquence de rotation des mots de passe.",
+      explain: "La perte de données maximale admissible correspond au RPO (Recovery Point Objective). Le RTO concerne le temps de remise en service." },
+
+    // ---------- SOC (7) ----------
+    { domain: "SOC",
+      q: "Quelle est la fonction principale d'un SIEM ?",
+      correct: "Collecter, normaliser et corréler les journaux de multiples sources pour détecter des incidents et faciliter les investigations.",
+      almost: "Centraliser et stocker les journaux pour répondre aux obligations d'archivage légal.",
+      wrong: "Chiffrer les disques durs des postes de travail.",
+      explain: "La centralisation est une base, mais la valeur d'un SIEM réside dans la corrélation et la détection en quasi temps réel." },
+    { domain: "SOC",
+      q: "Qu'est-ce qu'un faux positif dans un SOC ?",
+      correct: "Une alerte déclenchée alors qu'aucune activité malveillante n'a eu lieu.",
+      almost: "Une alerte de faible sévérité que l'on peut ignorer sans analyse.",
+      wrong: "Un antivirus qui a été désinstallé par erreur.",
+      explain: "Un faux positif n'est identifié qu'après analyse : une faible sévérité ne signifie pas absence de menace. Trop de faux positifs entraînent une « fatigue d'alerte »." },
+    { domain: "SOC",
+      q: "Selon le guide NIST SP 800-61, quelle phase suit « Détection et analyse » dans le cycle de réponse à incident ?",
+      correct: "Confinement, éradication et récupération.",
+      almost: "Éradication immédiate de la menace sur les systèmes touchés.",
+      wrong: "Publication d'un communiqué sur les réseaux sociaux.",
+      explain: "Éradiquer sans confiner d'abord risque de laisser l'attaquant se propager ou d'alerter l'adversaire. Le confinement vient en premier." },
+    { domain: "SOC",
+      q: "Qu'est-ce que le framework MITRE ATT&CK ?",
+      correct: "Une base de connaissances des tactiques et techniques utilisées par les attaquants, issue d'observations réelles.",
+      almost: "Une liste de vulnérabilités logicielles classées par score de gravité.",
+      wrong: "Un pare-feu nouvelle génération développé par MITRE.",
+      explain: "La liste de vulnérabilités correspond aux CVE (scorées avec le CVSS). ATT&CK décrit les comportements adverses (TTP), très utile pour la détection." },
+    { domain: "SOC",
+      q: "Quel est le rôle d'un EDR (Endpoint Detection and Response) ?",
+      correct: "Surveiller en continu l'activité des terminaux, détecter les comportements suspects et permettre une réponse (isolement, arrêt de processus, investigation).",
+      almost: "Bloquer les fichiers malveillants connus grâce à une base de signatures.",
+      wrong: "Sauvegarder automatiquement les postes de travail dans le cloud.",
+      explain: "La détection par signatures est celle de l'antivirus classique. L'EDR ajoute l'analyse comportementale, la télémétrie et les capacités de réponse." },
+    { domain: "SOC",
+      q: "Qu'est-ce qu'un IoC (Indicator of Compromise) ?",
+      correct: "Un artefact observable suggérant une compromission : hash de fichier, adresse IP, nom de domaine, clé de registre…",
+      almost: "Une vulnérabilité non corrigée détectée sur un serveur.",
+      wrong: "Un indicateur de performance mesurant la productivité des analystes.",
+      explain: "Une vulnérabilité est une faiblesse exploitable, pas la trace d'une compromission. L'IoC est une preuve technique d'activité malveillante." },
+    { domain: "SOC",
+      q: "Un utilisateur signale avoir cliqué sur un lien de phishing et saisi ses identifiants. Quelle est la réponse prioritaire ?",
+      correct: "Réinitialiser son mot de passe, révoquer ses sessions et jetons actifs, puis analyser les connexions et activités récentes du compte.",
+      almost: "Réinitialiser uniquement son mot de passe.",
+      wrong: "Supprimer le mail et clôturer le ticket.",
+      explain: "Changer le mot de passe ne coupe pas les sessions ou jetons déjà volés. Il faut aussi les révoquer et vérifier ce que l'attaquant a pu faire (règles de transfert, MFA ajouté…)." },
+
+    // ---------- Sécurité de l'IA (7) ----------
+    { domain: "IA",
+      q: "Qu'est-ce qu'une injection de prompt (prompt injection) ?",
+      correct: "L'insertion d'instructions malveillantes dans les entrées d'un modèle, directement ou via un contenu externe (page web, document), pour détourner son comportement.",
+      almost: "L'utilisation de scénarios de jeu de rôle par l'utilisateur pour contourner les règles du modèle.",
+      wrong: "L'ajout de mémoire vive au serveur qui héberge le modèle.",
+      explain: "Le jeu de rôle (« jailbreak ») est une forme d'attaque proche, mais l'injection de prompt est plus large : elle peut être indirecte, cachée dans un contenu traité par le modèle." },
+    { domain: "IA",
+      q: "Qu'est-ce que l'empoisonnement des données (data poisoning) ?",
+      correct: "La corruption des données d'entraînement pour altérer le comportement du modèle, par exemple en y implantant une porte dérobée.",
+      almost: "La modification des données soumises au modèle lors de son utilisation pour le tromper.",
+      wrong: "La suppression accidentelle d'un jeu de données.",
+      explain: "Modifier les entrées au moment de l'inférence relève des attaques par évasion (exemples adverses). L'empoisonnement cible la phase d'entraînement." },
+    { domain: "IA",
+      q: "Qu'est-ce qu'un exemple adverse (adversarial example) ?",
+      correct: "Une entrée légèrement modifiée, souvent de manière imperceptible pour un humain, conçue pour provoquer une erreur du modèle.",
+      almost: "Une donnée de test que le modèle n'a jamais vue pendant l'entraînement.",
+      wrong: "Un concurrent qui développe un modèle plus performant.",
+      explain: "Une donnée inédite n'est pas forcément hostile : l'exemple adverse est volontairement construit pour tromper le modèle." },
+    { domain: "IA",
+      q: "Comment le règlement européen sur l'IA (AI Act) encadre-t-il les systèmes d'IA ?",
+      correct: "Par une approche fondée sur les risques : pratiques interdites, systèmes à haut risque soumis à des exigences strictes, obligations de transparence, risque minimal.",
+      almost: "En interdisant tout usage de l'IA dans les secteurs sensibles comme la santé ou les ressources humaines.",
+      wrong: "Il ne s'applique qu'aux entreprises basées aux États-Unis.",
+      explain: "Ces secteurs relèvent souvent du « haut risque » : l'IA y est autorisée mais encadrée (gestion des risques, qualité des données, supervision humaine…)." },
+    { domain: "IA",
+      q: "Un collaborateur colle du code source confidentiel dans un chatbot d'IA grand public. Quel est le risque principal ?",
+      correct: "La divulgation d'informations confidentielles à un tiers (conservation, réutilisation éventuelle pour l'entraînement) : il faut utiliser des outils approuvés par l'entreprise.",
+      almost: "Le code proposé en retour par le chatbot pourrait contenir des erreurs.",
+      wrong: "Le chatbot va installer un virus sur son poste.",
+      explain: "La qualité du code généré est un vrai sujet, mais le risque majeur ici est la fuite de données vers un service non maîtrisé (« shadow AI »)." },
+    { domain: "IA",
+      q: "Que désigne le terme « hallucination » pour un modèle de langage ?",
+      correct: "La production d'une réponse plausible et assurée, mais factuellement fausse ou inventée.",
+      almost: "Le refus du modèle de répondre à une question légitime.",
+      wrong: "Une panne matérielle du processeur graphique (GPU).",
+      explain: "Le refus injustifié est un autre défaut (sur-refus). L'hallucination est dangereuse car elle est convaincante : il faut vérifier les sources." },
+    { domain: "IA",
+      q: "Un agent IA chargé de lire un agenda dispose aussi de droits d'écriture sur toute la messagerie et le SI. Quel risque de l'OWASP Top 10 pour les LLM cela illustre-t-il ?",
+      correct: "L'agentivité excessive (Excessive Agency) : il faut appliquer le moindre privilège aux outils et permissions de l'agent.",
+      almost: "L'injection de prompt.",
+      wrong: "Aucun risque : un agent IA agit toujours dans l'intérêt de l'utilisateur.",
+      explain: "Une injection de prompt peut être le déclencheur, mais la vulnérabilité décrite ici est l'excès de permissions, qui amplifie l'impact de toute manipulation." },
+  ];
+
+  const DOMAIN_LABELS = { IAM: "IAM", GRC: "GRC", SOC: "SOC", IA: "Sécurité de l'IA" };
+
+  /* =========================================================
+   * Utilitaires
+   * ========================================================= */
+  const $ = (id) => document.getElementById(id);
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  // Tirage : au moins MIN_PER_DOMAIN questions par domaine, le reste au hasard
+  function drawQuestions() {
+    const domains = Object.keys(DOMAIN_LABELS);
+    const picked = [];
+    const rest = [];
+    domains.forEach((d) => {
+      const pool = shuffle(BANK.filter((x) => x.domain === d));
+      picked.push(...pool.slice(0, MIN_PER_DOMAIN));
+      rest.push(...pool.slice(MIN_PER_DOMAIN));
+    });
+    picked.push(...shuffle(rest).slice(0, QUESTIONS_PER_GAME - picked.length));
+    return shuffle(picked).map((x) => ({
+      ...x,
+      choices: shuffle([
+        { text: x.correct, kind: "correct" },
+        { text: x.almost, kind: "almost" },
+        { text: x.wrong, kind: "wrong" },
+      ]),
+    }));
+  }
+
+  /* =========================================================
+   * État du jeu
+   * ========================================================= */
+  const canvas = $("board");
+  const ctx = canvas.getContext("2d");
+  const CELL = canvas.width / GRID;
+
+  let state;      // "start" | "playing" | "question" | "paused" | "ended"
+  let snake, dir, nextDirs, brick, questions, qIndex = 0, timer, lastTick, growPending, collisions = 0;
+  let results = [];
+
+  const DIRS = {
+    up: { x: 0, y: -1 }, down: { x: 0, y: 1 },
+    left: { x: -1, y: 0 }, right: { x: 1, y: 0 },
+  };
+
+  function resetSnake() {
+    const c = Math.floor(GRID / 2);
+    snake = [{ x: c, y: c }, { x: c - 1, y: c }, { x: c - 2, y: c }];
+    dir = DIRS.right;
+    nextDirs = [];
+    growPending = 0;
+  }
+
+  function newGame() {
+    questions = drawQuestions();
+    qIndex = 0;
+    results = [];
+    collisions = 0;
+    resetSnake();
+    placeBrick();
+    buildProgress();
+    updateHud();
+    hideAllOverlays();
+    state = "playing";
+    lastTick = performance.now();
+    if (!timer) timer = requestAnimationFrame(loop);
+  }
+
+  function placeBrick() {
+    const free = [];
+    for (let x = 0; x < GRID; x++)
+      for (let y = 0; y < GRID; y++)
+        if (!snake.some((s) => s.x === x && s.y === y)) free.push({ x, y });
+    brick = free[Math.floor(Math.random() * free.length)];
+  }
+
+  /* =========================================================
+   * Boucle de jeu
+   * ========================================================= */
+  function loop(now) {
+    if (state === "playing" && now - lastTick >= TICK_MS) {
+      lastTick = now;
+      step();
+    }
+    draw();
+    timer = requestAnimationFrame(loop);
+  }
+
+  function step() {
+    if (nextDirs.length) dir = nextDirs.shift();
+    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+    const hitWall = head.x < 0 || head.y < 0 || head.x >= GRID || head.y >= GRID;
+    // la queue se libère au même pas, sauf si le serpent grandit
+    const body = growPending > 0 ? snake : snake.slice(0, -1);
+    const hitSelf = body.some((s) => s.x === head.x && s.y === head.y);
+    if (hitWall || hitSelf) {
+      collisions++;
+      showToast("Collision ! Le serpent repart du centre.");
+      resetSnake();
+      if (snake.some((s) => s.x === brick.x && s.y === brick.y)) placeBrick();
+      lastTick = performance.now() + 700; // petit répit
+      updateHud();
+      return;
+    }
+
+    snake.unshift(head);
+    if (growPending > 0) growPending--; else snake.pop();
+
+    if (head.x === brick.x && head.y === brick.y) {
+      growPending += 1;
+      placeBrick();
+      updateHud();
+      askQuestion();
+    }
+  }
+
+  function queueDir(name) {
+    if (state !== "playing") return;
+    const d = DIRS[name];
+    const last = nextDirs.length ? nextDirs[nextDirs.length - 1] : dir;
+    if (d === last || (d.x === -last.x && d.y === -last.y)) return; // pas de demi-tour
+    if (nextDirs.length < 3) nextDirs.push(d);
+  }
+
+  /* =========================================================
+   * Rendu
+   * ========================================================= */
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawBrick(cx, cy) {
+    const x = cx * CELL + 1.5, y = cy * CELL + 1.5, w = CELL - 3, h = CELL - 3;
+    const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 250);
+    ctx.save();
+    ctx.shadowColor = "rgba(224,102,61," + (0.4 + 0.4 * pulse) + ")";
+    ctx.shadowBlur = 8 + 6 * pulse;
+    ctx.fillStyle = "#e0663d";
+    ctx.fillRect(x, y, w, h);
+    ctx.restore();
+    // joints de mortier
+    ctx.strokeStyle = "#8c3a1e";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x, y + h / 2); ctx.lineTo(x + w, y + h / 2);
+    ctx.moveTo(x + w / 2, y); ctx.lineTo(x + w / 2, y + h / 2);
+    ctx.moveTo(x + w / 4, y + h / 2); ctx.lineTo(x + w / 4, y + h);
+    ctx.moveTo(x + (3 * w) / 4, y + h / 2); ctx.lineTo(x + (3 * w) / 4, y + h);
+    ctx.stroke();
+    ctx.strokeRect(x, y, w, h);
+  }
+
+  function draw() {
+    ctx.fillStyle = "#121a30";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // grille discrète
+    ctx.strokeStyle = "rgba(255,255,255,0.03)";
+    ctx.lineWidth = 1;
+    for (let i = 1; i < GRID; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, canvas.height);
+      ctx.moveTo(0, i * CELL); ctx.lineTo(canvas.width, i * CELL);
+      ctx.stroke();
+    }
+
+    if (!snake) return;
+    if (brick) drawBrick(brick.x, brick.y);
+
+    // serpent : dégradé de la tête vers la queue
+    snake.forEach((s, i) => {
+      const t = i / Math.max(1, snake.length - 1);
+      const g = Math.round(230 - 90 * t), b = Math.round(168 - 40 * t);
+      ctx.fillStyle = i === 0 ? "#3ee6a8" : `rgb(40, ${g}, ${b})`;
+      roundRect(s.x * CELL + 1, s.y * CELL + 1, CELL - 2, CELL - 2, i === 0 ? 7 : 5);
+      ctx.fill();
+    });
+
+    // yeux
+    const h = snake[0];
+    const cx = h.x * CELL + CELL / 2, cy = h.y * CELL + CELL / 2;
+    const px = -dir.y, py = dir.x; // perpendiculaire
+    ctx.fillStyle = "#0b1020";
+    [-1, 1].forEach((side) => {
+      ctx.beginPath();
+      ctx.arc(cx + dir.x * 4 + px * 5 * side, cy + dir.y * 4 + py * 5 * side, 2.6, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  /* =========================================================
+   * HUD & progression
+   * ========================================================= */
+  function buildProgress() {
+    const p = $("progress");
+    p.innerHTML = "";
+    for (let i = 0; i < QUESTIONS_PER_GAME; i++) {
+      const d = document.createElement("div");
+      d.className = "dot";
+      p.appendChild(d);
+    }
+  }
+
+  function updateHud() {
+    const score = results.filter((r) => r.ok).length;
+    $("hudQuestions").textContent = `${results.length} / ${QUESTIONS_PER_GAME}`;
+    $("hudScore").textContent = score;
+    $("hudLength").textContent = snake ? snake.length + growPending : 3;
+    [...$("progress").children].forEach((dot, i) => {
+      dot.className = "dot";
+      if (results[i]) dot.classList.add(results[i].ok ? "ok" : "ko");
+      else if (i === results.length && state !== "ended") dot.classList.add("current");
+    });
+  }
+
+  let toastTimer;
+  function showToast(msg) {
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("visible");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("visible"), 1600);
+  }
+
+  function hideAllOverlays() {
+    document.querySelectorAll(".overlay").forEach((o) => o.classList.remove("visible"));
+  }
+
+  /* =========================================================
+   * Questions
+   * ========================================================= */
+  let answered = false;
+
+  function askQuestion() {
+    state = "question";
+    answered = false;
+    const q = questions[qIndex];
+    const tag = $("qTag");
+    tag.className = "tag " + q.domain;
+    tag.textContent = DOMAIN_LABELS[q.domain];
+    $("qNum").textContent = `Question ${qIndex + 1} / ${QUESTIONS_PER_GAME}`;
+    $("qText").textContent = q.q;
+    const box = $("qChoices");
+    box.innerHTML = "";
+    q.choices.forEach((c, i) => {
+      const b = document.createElement("button");
+      b.className = "choice";
+      b.innerHTML = `<span class="key">${i + 1}</span><span>${escapeHtml(c.text)}</span>`;
+      b.addEventListener("click", () => answer(i));
+      box.appendChild(b);
+    });
+    const fb = $("qFeedback");
+    fb.className = "feedback";
+    fb.innerHTML = "";
+    $("continueBtn").style.display = "none";
+    $("questionOverlay").classList.add("visible");
+    box.firstChild.focus({ preventScroll: true });
+  }
+
+  function answer(i) {
+    if (state !== "question" || answered) return;
+    answered = true;
+    const q = questions[qIndex];
+    const choice = q.choices[i];
+    const ok = choice.kind === "correct";
+    results.push({ q, ok, kind: choice.kind });
+
+    [...$("qChoices").children].forEach((btn, j) => {
+      btn.disabled = true;
+      const kind = q.choices[j].kind;
+      if (kind === "correct") btn.classList.add("correct");
+      else if (j === i) btn.classList.add("wrong");
+      else btn.classList.add("dim");
+    });
+
+    const fb = $("qFeedback");
+    let title;
+    if (ok) title = "✔ Bonne réponse !";
+    else if (choice.kind === "almost") title = "✖ Presque… mais pas tout à fait.";
+    else title = "✖ Mauvaise réponse.";
+    fb.className = "feedback visible " + (ok ? "ok" : "ko");
+    fb.innerHTML = `<b>${title}</b><br>${escapeHtml(q.explain)}`;
+
+    const btn = $("continueBtn");
+    btn.textContent = qIndex + 1 >= QUESTIONS_PER_GAME ? "Voir mes résultats" : "Continuer";
+    btn.style.display = "inline-block";
+    btn.focus();
+    updateHud();
+  }
+
+  function continueGame() {
+    if (state !== "question" || !answered) return;
+    qIndex++;
+    $("questionOverlay").classList.remove("visible");
+    if (qIndex >= QUESTIONS_PER_GAME) return endGame();
+    state = "playing";
+    nextDirs = [];
+    lastTick = performance.now() + 400; // laisse le temps de se replacer
+    updateHud();
+  }
+
+  /* =========================================================
+   * Fin de partie
+   * ========================================================= */
+  function endGame() {
+    state = "ended";
+    updateHud();
+    const score = results.filter((r) => r.ok).length;
+    const passed = score > PASS_THRESHOLD;
+
+    const byDomain = {};
+    Object.keys(DOMAIN_LABELS).forEach((d) => (byDomain[d] = { ok: 0, total: 0 }));
+    results.forEach((r) => { byDomain[r.q.domain].total++; if (r.ok) byDomain[r.q.domain].ok++; });
+
+    const domainHtml = Object.keys(byDomain).map((d) =>
+      `<div><span class="tag ${d}" style="margin:0 0 4px">${d}</span><b>${byDomain[d].ok} / ${byDomain[d].total}</b></div>`
+    ).join("");
+
+    const recapHtml = results.map((r, i) => {
+      const status = r.ok ? "Juste" : (r.kind === "almost" ? "Presque juste" : "Faux");
+      return `<li class="${r.ok ? "ok" : "ko"}"><span class="ico">${r.ok ? "✔" : "✖"}</span>
+        <span><b>Q${i + 1} · ${escapeHtml(DOMAIN_LABELS[r.q.domain])}</b> — ${escapeHtml(r.q.q)}<br>
+        <span style="color:var(--muted)">${status}${r.ok ? "" : " · Réponse attendue : " + escapeHtml(r.q.correct)}</span></span></li>`;
+    }).join("");
+
+    $("endCard").innerHTML = `
+      <h2 style="text-align:center">Résultats de l'évaluation</h2>
+      <div class="big-score">${score}<small> / ${QUESTIONS_PER_GAME}</small></div>
+      <div class="verdict ${passed ? "ok" : "ko"}">
+        ${passed ? "🏅 Compétences validées" : "Compétences non validées – encore un effort !"}
+      </div>
+      <p style="text-align:center;color:var(--muted);font-size:.85rem">
+        Seuil de validation : plus de ${PASS_THRESHOLD} bonnes réponses sur ${QUESTIONS_PER_GAME}
+        · Collisions : ${collisions} · Longueur finale : ${snake.length + growPending}
+      </p>
+      <div class="domain-scores">${domainHtml}</div>
+      <ul class="recap">${recapHtml}</ul>
+      <div style="text-align:center"><button class="btn" id="replayBtn">Rejouer (nouveau tirage)</button></div>`;
+    $("endOverlay").classList.add("visible");
+    $("replayBtn").addEventListener("click", newGame);
+    $("replayBtn").focus({ preventScroll: true });
+  }
+
+  /* =========================================================
+   * Pause
+   * ========================================================= */
+  function togglePause() {
+    if (state === "playing") {
+      state = "paused";
+      $("pauseOverlay").classList.add("visible");
+    } else if (state === "paused") {
+      state = "playing";
+      $("pauseOverlay").classList.remove("visible");
+      lastTick = performance.now() + 300;
+    }
+  }
+
+  /* =========================================================
+   * Contrôles
+   * ========================================================= */
+  const KEYMAP = {
+    ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
+    z: "up", w: "up", s: "down", q: "left", a: "left", d: "right",
+  };
+
+  document.addEventListener("keydown", (e) => {
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if (state === "question") {
+      if (!answered && ["1", "2", "3"].includes(k)) { e.preventDefault(); answer(Number(k) - 1); }
+      else if (answered && (k === "Enter" || k === " ")) { e.preventDefault(); continueGame(); }
+      return;
+    }
+    if (state === "start" && (k === "Enter" || k === " ")) { e.preventDefault(); newGame(); return; }
+    if (k === "p" || k === "Escape") { e.preventDefault(); togglePause(); return; }
+    if (KEYMAP[k]) { e.preventDefault(); queueDir(KEYMAP[k]); }
+  });
+
+  // Glisser (mobile)
+  let touchStart = null;
+  canvas.addEventListener("touchstart", (e) => {
+    const t = e.changedTouches[0];
+    touchStart = { x: t.clientX, y: t.clientY };
+  }, { passive: true });
+  canvas.addEventListener("touchend", (e) => {
+    if (!touchStart) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStart.x, dy = t.clientY - touchStart.y;
+    touchStart = null;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
+    queueDir(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"));
+  }, { passive: true });
+
+  $("pad").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-dir]");
+    if (b) queueDir(b.dataset.dir);
+  });
+
+  $("startBtn").addEventListener("click", newGame);
+  $("continueBtn").addEventListener("click", continueGame);
+  $("resumeBtn").addEventListener("click", togglePause);
+
+  // Pause automatique si l'onglet perd le focus
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && state === "playing") togglePause();
+  });
+
+  /* =========================================================
+   * Initialisation
+   * ========================================================= */
+  state = "start";
+  resetSnake();
+  buildProgress();
+  updateHud();
+  timer = requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
