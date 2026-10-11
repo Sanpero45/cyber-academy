@@ -518,12 +518,12 @@ function parseEntry(line) {
 
 /* Noms des lettres pour l'épellation à voix haute */
 const NAMES = {
-  a: 'a', b: 'bé', c: 'cé', d: 'dé', e: 'eu', f: 'èf', g: 'gé', h: 'hache', i: 'i', j: 'ji', k: 'ka', l: 'èl',
+  a: 'a', b: 'bé', c: 'cé', d: 'dé', e: 'euh', f: 'èf', g: 'gé', h: 'hache', i: 'i', j: 'ji', k: 'ka', l: 'èl',
   m: 'èm', n: 'èn', o: 'o', p: 'pé', q: 'ku', r: 'èr', s: 'èss', t: 'té', u: 'u', v: 'vé', w: 'double vé',
-  x: 'ixe', y: 'i grec', z: 'zèd', 'é': 'e accent aigu', 'è': 'e accent grave', 'ê': 'e accent circonflexe',
-  'ë': 'e tréma', 'à': 'a accent grave', 'â': 'a accent circonflexe', 'î': 'i accent circonflexe', 'ï': 'i tréma',
+  x: 'ixe', y: 'i grec', z: 'zèd', 'é': 'euh accent aigu', 'è': 'euh accent grave', 'ê': 'euh accent circonflexe',
+  'ë': 'euh tréma', 'à': 'a accent grave', 'â': 'a accent circonflexe', 'î': 'i accent circonflexe', 'ï': 'i tréma',
   'ô': 'o accent circonflexe', 'û': 'u accent circonflexe', 'ù': 'u accent grave', 'ü': 'u tréma',
-  'ç': 'cé cédille', 'œ': 'o, e collés', 'æ': 'a, e collés', 'ÿ': 'i grec tréma'
+  'ç': 'cé cédille', 'œ': 'o, euh collés', 'æ': 'a, euh collés', 'ÿ': 'i grec tréma'
 };
 const nameOf = c => NAMES[c] || c;
 
@@ -558,13 +558,13 @@ function buildTraps(e) {
     if (!c.accent) return;
     if (c.lo === 'œ' || c.lo === 'æ') {
       t.push({ type: 'accent', idx: [i], text: `« ${c.ch} » : les lettres ${c.lo === 'œ' ? 'o et e' : 'a et e'} sont collées.`,
-        speak: `Attention, les lettres ${c.lo === 'œ' ? 'o et e' : 'a et e'} sont collées.` });
+        speak: `Attention, les lettres ${c.lo === 'œ' ? 'o et euh' : 'a et euh'} sont collées.` });
     } else if (c.lo === 'ç') {
       t.push({ type: 'accent', idx: [i], text: `Le « ç » a une cédille : il fait le son [s].`,
         speak: `Le cé a une cédille. Il fait le son sss.` });
     } else {
       t.push({ type: 'accent', idx: [i], text: `Le « ${c.ch} » a ${ACCENTS[c.lo]}.`,
-        speak: `Le ${c.lo[0] === 'e' || 'éèêë'.includes(c.lo) ? 'e' : nameOf(c.lo).split(' ')[0]} a ${ACCENTS[c.lo]}.` });
+        speak: `Attention : ${nameOf(c.lo)}.` });
     }
   });
   return t;
