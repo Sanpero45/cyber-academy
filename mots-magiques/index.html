@@ -2,7 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#6c5ce7">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mots Magiques">
 <title>Les Mots Magiques</title>
 <style>
   :root {
@@ -40,7 +44,8 @@
   header {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
     padding: 10px 16px; background: var(--primary); color: #fff;
-    box-shadow: 0 4px 0 var(--primary-d); position: sticky; top: 0; z-index: 10;
+    box-shadow: 0 4px 0 var(--primary-d); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
   }
   header h1 { margin: 0; font-size: 1.4rem; display: flex; align-items: center; gap: 8px; cursor: pointer; }
   .hbtns { display: flex; gap: 8px; align-items: center; }
@@ -50,7 +55,13 @@
   }
   button.pill:hover { background: rgba(255,255,255,.32); }
 
-  main { max-width: 900px; margin: 0 auto; padding: 16px; }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--primary); }
+  main { max-width: 900px; margin: 0 auto; padding-block: 16px calc(16px + env(safe-area-inset-bottom, 0px));
+         padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  button { touch-action: manipulation; }
+  /* fenêtre de message (remplace alert / confirm) */
+  .modal { position: fixed; inset: 0; background: rgba(43,45,66,.45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  .modal .card { max-width: 420px; width: 100%; text-align: center; font-size: 1.2rem; margin: 0; }
   .screen { display: none; animation: pop .25s ease-out; }
   .screen.active { display: block; }
   @keyframes pop { from { transform: scale(.97); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -197,10 +208,11 @@
   .kbd { max-width: 640px; margin: 10px auto 0; }
   .krow { display: flex; justify-content: center; gap: 5px; margin-bottom: 6px; }
   .key {
-    flex: 1; max-width: 52px; height: 52px; border-radius: 10px; background: #fff; color: var(--text);
+    flex: 1; min-width: 0; padding: 0; max-width: 52px; height: 52px; border-radius: 10px; background: #fff; color: var(--text);
     font-size: 1.5rem; font-weight: bold; box-shadow: 0 4px 0 #cfc8b4; border: 2px solid #e8e2d0;
   }
-  .key.acc { background: #fff1dc; border-color: #ffd9a3; }
+  .key.acc { background: #fff1dc; border-color: #ffd9a3; flex: 0 0 44px; }
+  .krow.accs { flex-wrap: wrap; }
   .key.wide { max-width: 120px; flex: 2; font-size: 1.15rem; }
   .key.ok { background: var(--ok); color: #fff; box-shadow: 0 4px 0 #1d8048; border-color: var(--ok); }
   .key:active { transform: translateY(3px); box-shadow: 0 1px 0 #cfc8b4; }
@@ -237,7 +249,11 @@
     header h1 { font-size: 1.1rem; }
     .pill { padding: 5px 9px; font-size: .95rem; }
     .key { height: 46px; font-size: 1.25rem; }
-    .slot { width: 2.1rem; height: 2.8rem; font-size: 1.6rem; }
+    .key.acc { flex-basis: 38px; }
+    .card { padding: 14px; }
+    .slot { width: 1.9rem; height: 2.7rem; font-size: 1.5rem; border-radius: 9px; }
+    .slots { gap: 4px; }
+    .slot.fixed { width: .8rem; }
     .hl { min-width: 2.2rem; height: 3.4rem; font-size: 1.9rem; padding: 0 3px; }
     .hunt { gap: 4px; }
     .tile { width: 2.9rem; height: 3.2rem; font-size: 1.8rem; }
@@ -691,6 +707,21 @@ function confetti() {
     setTimeout(() => s.remove(), 3800);
   }
 }
+// Petite fenêtre de message. Avec onYes : boutons Oui / Non.
+function popup(msg, onYes) {
+  const m = document.createElement('div');
+  m.className = 'modal';
+  m.innerHTML = `<div class="card"><p>${esc(msg)}</p><div class="row">${onYes
+    ? '<button class="btn red" data-r="1">Oui</button><button class="btn alt" data-r="0">Non</button>'
+    : '<button class="btn" data-r="0">D\'accord</button>'}</div></div>`;
+  m.onclick = ev => {
+    const b = ev.target.closest('[data-r]');
+    if (!b && ev.target !== m) return;
+    m.remove();
+    if (b && b.dataset.r === '1') onYes();
+  };
+  document.body.appendChild(m);
+}
 function anim(el, cls) { if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
@@ -777,11 +808,11 @@ function chooseWords(pool, n) {
 
 function startGame(type) {
   const ents = entries();
-  if (!ents.length) { say('La liste est vide.'); alert('La liste de mots est vide. Ajoutez des mots dans l\'espace parents ⚙️.'); return; }
+  if (!ents.length) { say('La liste est vide.'); popup('La liste de mots est vide. Ajoutez des mots dans l\'espace parents ⚙️.'); return; }
   let pool = ents;
   if (type === 'hunt') {
     pool = ents.filter(e => e.traps.length);
-    if (!pool.length) { alert('Aucun mot de cette liste ne contient de piège : choisis un autre jeu !'); return; }
+    if (!pool.length) { popup('Aucun mot de cette liste ne contient de piège : choisis un autre jeu !'); return; }
   }
   const words = type === 'learn' ? ents.slice() : chooseWords(pool, Math.min(8, Math.max(5, pool.length)));
   game = { type, words, i: 0, results: [], earned: 0 };
@@ -1110,7 +1141,7 @@ function typingHTML(e) {
     <div id="tAfter"></div>
     <div class="kbd" id="kbd">
       ${KB_ROWS.map(r => `<div class="krow">${r.map(k => `<button class="key" data-k="${esc(k)}">${esc(k)}</button>`).join('')}</div>`).join('')}
-      <div class="krow">${KB_ACC.map(k => `<button class="key acc" data-k="${k}">${k}</button>`).join('')}</div>
+      <div class="krow accs">${KB_ACC.map(k => `<button class="key acc" data-k="${k}">${k}</button>`).join('')}</div>
       <div class="krow"><button class="key wide" data-k="back">⌫ Effacer</button><button class="key wide ok" data-k="ok">✔ Valider</button></div>
     </div>`;
 }
@@ -1335,18 +1366,20 @@ $('#pNew').onclick = () => {
   $('#pText').focus();
 };
 $('#pDel').onclick = () => {
-  if (state.lists.length <= 1) { alert('Il faut garder au moins une liste.'); return; }
+  if (state.lists.length <= 1) { popup('Il faut garder au moins une liste.'); return; }
   const l = state.lists.find(x => x.id === editId);
-  if (!confirm(`Supprimer la liste « ${l.name} » ?`)) return;
+  popup(`Supprimer la liste « ${l.name} » ?`, () => {
   state.lists = state.lists.filter(x => x.id !== editId);
   if (state.current === editId) state.current = state.lists[state.lists.length - 1].id;
   editId = state.current;
   save(); renderParents();
+  });
 };
 $('#pReset').onclick = () => {
-  if (!confirm('Remettre toutes les étoiles et les progrès à zéro ?')) return;
-  state.stars = 0; state.mastery = {};
-  save(); updateHeader(); renderStats();
+  popup('Remettre toutes les étoiles et les progrès à zéro ?', () => {
+    state.stars = 0; state.mastery = {};
+    save(); updateHeader(); renderStats();
+  });
 };
 function fillVoices() {
   const sel = $('#pVoice'); if (!sel) return;
