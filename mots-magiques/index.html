@@ -3,307 +3,444 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#6c5ce7">
+<meta name="theme-color" content="#ffffff">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Mots Magiques">
 <title>Les Mots Magiques</title>
 <style>
+  /* Mise en page : une colonne centrée, cartes blanches sur fond ciel pointillé,
+     barre d'onglets en bas comme une appli. Couleurs vives par jeu, pièges en rouge/bleu/orange. */
   :root {
-    --bg: #fff8e7;
-    --bg2: #ffeccc;
-    --card: #ffffff;
-    --text: #2b2d42;
-    --muted: #6c7086;
-    --primary: #6c5ce7;
-    --primary-d: #4b3cc4;
-    --ok: #27ae60;
-    --ko: #e74c3c;
+    color-scheme: light;
+    --bg: #eaf1fb;
+    --bg-dot: #d6e2f5;
+    --surface: #ffffff;
+    --surface-2: #f4f7fd;
+    --ink: #1d2242;
+    --ink-soft: #5d6588;
+    --line: #e1e7f3;
+    --primary: #3b4fe0;
+    --primary-d: #2a3bb8;
+    --primary-soft: #e6e9ff;
+    --sun: #ffc83d;
+    --sun-d: #e9a800;
+    --ok: #1fb57a;
+    --ok-d: #138a5a;
+    --ok-soft: #e1f8ee;
+    --ko: #ef4b4b;
+    --ko-d: #c22f2f;
+    --ko-soft: #fde7e7;
+    /* couleurs des pièges (gardées d'une version à l'autre : l'enfant les connaît) */
     --silent: #e63946;
     --double: #1d7fd6;
+    --double-soft: #dcecff;
     --accent: #f08c00;
-    --star: #ffb703;
-    --shadow: 0 6px 0 rgba(0,0,0,.12);
-    --radius: 22px;
-    --font: "Andika", "Comic Sans MS", "Chalkboard SE", "Trebuchet MS", sans-serif;
+    /* tuiles de jeux */
+    --g1: #ff7a59; --g1s: #ffe9e2;
+    --g2: #ffb300; --g2s: #fff4d6;
+    --g3: #1fb57a; --g3s: #dff7ec;
+    --g4: #3b9cff; --g4s: #e1f0ff;
+    --g5: #9b6bff; --g5s: #efe8ff;
+    --g6: #ff5fa8; --g6s: #ffe5f2;
+    --radius: 24px;
+    --radius-s: 16px;
+    --shadow: 0 2px 0 rgba(29,34,66,.04), 0 8px 24px rgba(29,34,66,.07);
+    --font: ui-rounded, "SF Pro Rounded", "Nunito", "Varela Round", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+    --nav-h: 72px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; padding: 0; }
   body {
     font-family: var(--font);
-    color: var(--text);
-    background: radial-gradient(circle at 20% 0%, var(--bg2), var(--bg) 60%) fixed;
+    color: var(--ink);
+    background-color: var(--bg);
+    background-image: radial-gradient(var(--bg-dot) 1.4px, transparent 1.6px);
+    background-size: 22px 22px;
     min-height: 100vh;
-    user-select: none;
-    -webkit-user-select: none;
+    user-select: none; -webkit-user-select: none;
   }
-  button { font-family: inherit; cursor: pointer; border: none; }
-  textarea, input, select { font-family: inherit; font-size: 1rem; }
+  button { font-family: inherit; cursor: pointer; border: none; color: inherit; touch-action: manipulation; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+  textarea, input, select { font-family: inherit; font-size: 1rem; color: var(--ink); }
+  h1, h2, h3 { text-wrap: balance; }
 
   /* ---------- En-tête ---------- */
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); }
   header {
-    display: flex; align-items: center; justify-content: space-between; gap: 8px;
-    padding: 10px 16px; background: var(--primary); color: #fff;
-    box-shadow: 0 4px 0 var(--primary-d); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+    background: rgba(255,255,255,.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .hwrap {
+    max-width: 920px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding-block: 10px;
     padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
   }
-  header h1 { margin: 0; font-size: 1.4rem; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .logo { display: flex; align-items: center; gap: 10px; background: none; padding: 0; font-size: 1.25rem; font-weight: 800; letter-spacing: -.01em; }
+  .logo .mark {
+    width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; font-size: 1.3rem;
+    background: linear-gradient(135deg, var(--sun), var(--g1)); box-shadow: 0 3px 0 var(--sun-d);
+  }
+  .logo small { display: block; font-size: .72rem; font-weight: 700; color: var(--ink-soft); letter-spacing: .04em; text-transform: uppercase; }
   .hbtns { display: flex; gap: 8px; align-items: center; }
   .pill {
-    background: rgba(255,255,255,.2); color: #fff; border-radius: 999px;
-    padding: 6px 12px; font-size: 1.05rem; font-weight: bold; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 999px;
+    background: var(--surface-2); border: 1px solid var(--line); font-size: 1.05rem; font-weight: 800; white-space: nowrap;
   }
-  button.pill:hover { background: rgba(255,255,255,.32); }
+  .pill.stars { background: #fff6dc; border-color: #ffe39a; }
+  .pill.icon { width: 40px; padding: 0; justify-content: center; }
 
-  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--primary); }
-  main { max-width: 900px; margin: 0 auto; padding-block: 16px calc(16px + env(safe-area-inset-bottom, 0px));
-         padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-  button { touch-action: manipulation; }
-  /* fenêtre de message (remplace alert / confirm) */
-  .modal { position: fixed; inset: 0; background: rgba(43,45,66,.45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
-  .modal .card { max-width: 420px; width: 100%; text-align: center; font-size: 1.2rem; margin: 0; }
-  .screen { display: none; animation: pop .25s ease-out; }
-  .screen.active { display: block; }
-  @keyframes pop { from { transform: scale(.97); opacity: 0; } to { transform: none; opacity: 1; } }
-
-  .card {
-    background: var(--card); border-radius: var(--radius); padding: 18px;
-    box-shadow: var(--shadow); margin-bottom: 16px;
+  /* ---------- Barre d'onglets ---------- */
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    background: rgba(255,255,255,.96); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px);
   }
-  h2 { margin: 0 0 10px; font-size: 1.5rem; }
-  .muted { color: var(--muted); }
+  .tabbar .in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); height: var(--nav-h); }
+  .tab { background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: .82rem; font-weight: 800; color: var(--ink-soft); }
+  .tab .ti { font-size: 1.5rem; width: 54px; height: 32px; display: grid; place-items: center; border-radius: 999px; transition: background .15s; }
+  .tab.on { color: var(--primary); }
+  .tab.on .ti { background: var(--primary-soft); }
+  body.in-game .tabbar { display: none; }
+
+  main {
+    max-width: 920px; margin: 0 auto;
+    padding-block: 18px calc(var(--nav-h) + 24px + env(safe-area-inset-bottom, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  body.in-game main { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+  [hidden] { display: none !important; }
+  .screen { display: none; }
+  .screen.active { display: flex; flex-direction: column; gap: 16px; animation: rise .28s ease-out; }
+  @keyframes rise { from { transform: translateY(8px); opacity: .4; } to { transform: none; opacity: 1; } }
+
+  .card { background: var(--surface); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); min-width: 0; }
+  h2 { margin: 0; font-size: 1.4rem; font-weight: 800; letter-spacing: -.01em; }
+  .eyebrow { font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 8px; }
+  .muted { color: var(--ink-soft); }
   .center { text-align: center; }
 
   /* ---------- Accueil ---------- */
-  .hello { display: flex; align-items: center; gap: 14px; }
-  .mascot { font-size: 3.6rem; animation: bob 2.4s ease-in-out infinite; }
-  @keyframes bob { 50% { transform: translateY(-6px) rotate(-4deg); } }
-  .bubble {
-    background: #fff; border-radius: 18px; padding: 12px 16px; position: relative; flex: 1;
-    font-size: 1.15rem; border: 3px solid var(--bg2);
+  .hero {
+    display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center;
+    background: linear-gradient(120deg, #fff 40%, #fff6dc); position: relative; overflow: hidden;
   }
-  .games { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 14px; }
-  .game-btn {
-    background: var(--card); border-radius: var(--radius); padding: 16px 12px; box-shadow: var(--shadow);
-    text-align: center; font-size: 1.15rem; color: var(--text); transition: transform .1s;
-    border: 4px solid transparent;
-  }
-  .game-btn:hover { transform: translateY(-3px); border-color: var(--primary); }
-  .game-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.12); }
-  .game-btn .ico { font-size: 2.8rem; display: block; margin-bottom: 4px; }
-  .game-btn b { display: block; font-size: 1.2rem; }
-  .game-btn small { color: var(--muted); font-size: .9rem; }
+  .hero .av { width: 116px; height: 145px; border-radius: 22px; overflow: hidden; background: var(--surface-2); flex: none; cursor: pointer; padding: 0; }
+  .hero .av svg { width: 100%; height: 100%; display: block; }
+  .hero h2 { font-size: 1.55rem; }
+  .hero p { margin: 6px 0 0; font-size: 1.05rem; line-height: 1.4; }
+  .level { margin-top: 12px; display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: .95rem; }
+  .level .bar { flex: 1; height: 12px; background: var(--surface-2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .level .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--sun), var(--g1)); border-radius: 999px; }
+  .lvl-badge { background: var(--ink); color: #fff; border-radius: 999px; padding: 3px 10px; font-size: .82rem; }
 
+  .listhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .listhead select { padding: 9px 12px; border-radius: 12px; border: 1px solid var(--line); font-size: 1rem; background: var(--surface-2); font-weight: 700; max-width: 100%; }
   .wordchips { display: flex; flex-wrap: wrap; gap: 8px; }
   .chip {
-    background: var(--bg); border-radius: 999px; padding: 6px 12px; font-size: 1.1rem;
-    border: 2px solid var(--bg2); color: var(--text);
+    background: var(--surface-2); border-radius: 999px; padding: 8px 14px; font-size: 1.08rem; font-weight: 700;
+    border: 1px solid var(--line); display: inline-flex; align-items: center; gap: 6px;
   }
-  .chip .st { font-size: .8rem; margin-left: 4px; }
-  .listsel { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-  .listsel select { padding: 8px 10px; border-radius: 12px; border: 2px solid var(--bg2); font-size: 1.05rem; background: #fff; }
+  .chip:active { transform: scale(.96); }
+  .chip .st { font-size: .75rem; }
+  .chip.known { background: #fff6dc; border-color: #ffe39a; }
+
+  .games { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+  .game-btn {
+    --c: var(--g1); --cs: var(--g1s);
+    background: var(--surface); border-radius: var(--radius); padding: 16px 14px 14px; box-shadow: var(--shadow);
+    text-align: left; display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden;
+    transition: transform .12s ease;
+  }
+  .game-btn::after { content: ""; position: absolute; right: -26px; top: -26px; width: 90px; height: 90px; border-radius: 50%; background: var(--cs); }
+  .game-btn:hover { transform: translateY(-2px); }
+  .game-btn:active { transform: scale(.97); }
+  .game-btn .ico { width: 52px; height: 52px; border-radius: 16px; background: var(--c); display: grid; place-items: center; font-size: 1.7rem; position: relative; z-index: 1; box-shadow: 0 4px 0 rgba(0,0,0,.12); }
+  .game-btn b { font-size: 1.12rem; font-weight: 800; position: relative; z-index: 1; }
+  .game-btn small { color: var(--ink-soft); font-size: .88rem; line-height: 1.3; position: relative; z-index: 1; }
+  .game-btn .lv { font-size: .72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--c); position: relative; z-index: 1; }
+  .gb1 { --c: var(--g1); --cs: var(--g1s); } .gb2 { --c: var(--g2); --cs: var(--g2s); } .gb3 { --c: var(--g3); --cs: var(--g3s); }
+  .gb4 { --c: var(--g4); --cs: var(--g4s); } .gb5 { --c: var(--g5); --cs: var(--g5s); } .gb6 { --c: var(--g6); --cs: var(--g6s); }
 
   /* ---------- Mot avec pièges ---------- */
   .word {
-    font-size: clamp(2.4rem, 9vw, 4.6rem); font-weight: bold; letter-spacing: .06em;
-    text-align: center; line-height: 1.5; padding: 10px 0; word-break: break-word;
+    font-size: clamp(2.4rem, 10vw, 4.4rem); font-weight: 800; letter-spacing: .06em;
+    text-align: center; line-height: 1.5; padding: 8px 0; word-break: break-word;
   }
   .L { display: inline-block; position: relative; min-width: .3em; }
-  .t-silent { color: var(--silent); }
-  .t-silent::after {
-    content: "🤫"; position: absolute; left: 50%; top: -.35em; transform: translateX(-50%);
-    font-size: .32em; letter-spacing: 0;
-  }
-  .t-silent { text-decoration: underline dotted var(--silent); text-decoration-thickness: 4px; text-underline-offset: 8px; }
-  .t-double { color: var(--double); background: #dcecff; border-radius: 8px; }
+  .t-silent { color: var(--silent); text-decoration: underline dotted var(--silent); text-decoration-thickness: 4px; text-underline-offset: 8px; }
+  .t-silent::after { content: "🤫"; position: absolute; left: 50%; top: -.35em; transform: translateX(-50%); font-size: .32em; letter-spacing: 0; }
+  .t-double { color: var(--double); background: var(--double-soft); border-radius: 8px; }
   .t-accent { color: var(--accent); }
   .t-accent.t-silent, .t-double.t-silent { color: var(--silent); }
-  .legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: .95rem; }
-  .legend span { display: inline-flex; align-items: center; gap: 4px; }
-  .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+  .legend { display: flex; gap: 8px 14px; flex-wrap: wrap; justify-content: center; font-size: .92rem; font-weight: 700; color: var(--ink-soft); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
 
-  .traps { list-style: none; padding: 0; margin: 10px 0 0; }
+  .traps { list-style: none; padding: 0; margin: 4px 0 0; display: flex; flex-direction: column; gap: 8px; }
   .traps li {
-    background: var(--bg); border-radius: 14px; padding: 10px 14px; margin: 6px 0; font-size: 1.1rem;
-    border-left: 8px solid var(--muted); display: flex; gap: 8px; align-items: center;
+    background: var(--surface-2); border-radius: var(--radius-s); padding: 10px 12px 10px 14px; font-size: 1.08rem;
+    display: flex; gap: 10px; align-items: center; border: 1px solid var(--line); position: relative; overflow: hidden;
   }
-  .traps li.silent { border-color: var(--silent); }
-  .traps li.double { border-color: var(--double); }
-  .traps li.accent { border-color: var(--accent); }
-  .traps li.tip { border-color: var(--ok); }
-  .traps li button { margin-left: auto; background: none; font-size: 1.3rem; }
+  .traps li::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--ink-soft); }
+  .traps li.silent::before { background: var(--silent); }
+  .traps li.double::before { background: var(--double); }
+  .traps li.accent::before { background: var(--accent); }
+  .traps li.tip::before { background: var(--ok); }
+  .traps li button { margin-left: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; width: 40px; height: 40px; flex: none; font-size: 1.15rem; }
 
   /* ---------- Boutons ---------- */
-  .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 10px 0; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
   .btn {
-    background: var(--primary); color: #fff; font-size: 1.15rem; font-weight: bold;
-    padding: 12px 18px; border-radius: 16px; box-shadow: 0 5px 0 var(--primary-d);
-    transition: transform .08s;
+    background: var(--primary); color: #fff; font-size: 1.08rem; font-weight: 800;
+    padding: 12px 18px; border-radius: 16px; box-shadow: 0 4px 0 var(--primary-d);
+    transition: transform .08s, box-shadow .08s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   }
-  .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--primary-d); }
-  .btn.alt { background: #fff; color: var(--primary); box-shadow: 0 5px 0 #d4ccff; border: 2px solid #d4ccff; }
-  .btn.green { background: var(--ok); box-shadow: 0 5px 0 #1d8048; }
-  .btn.red { background: var(--ko); box-shadow: 0 5px 0 #a8342a; }
-  .btn.big { font-size: 1.4rem; padding: 14px 26px; }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--primary-d); }
+  .btn.alt { background: var(--surface); color: var(--primary); box-shadow: 0 4px 0 var(--line); border: 1px solid var(--line); }
+  .btn.green { background: var(--ok); box-shadow: 0 4px 0 var(--ok-d); }
+  .btn.red { background: var(--ko); box-shadow: 0 4px 0 var(--ko-d); }
+  .btn.sun { background: var(--sun); color: var(--ink); box-shadow: 0 4px 0 var(--sun-d); }
+  .btn.big { font-size: 1.28rem; padding: 14px 24px; border-radius: 18px; }
+  .btn.round { width: 46px; height: 46px; padding: 0; border-radius: 14px; font-size: 1.2rem; }
   .btn:disabled { opacity: .45; cursor: default; }
 
   /* ---------- Zone de jeu ---------- */
-  .gametop { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
-  .gametop h2 { margin: 0; }
-  .progress { display: flex; gap: 5px; flex-wrap: wrap; }
-  .progress i { width: 16px; height: 16px; border-radius: 50%; background: #e5e1d5; display: inline-block; }
-  .progress i.done { background: var(--star); }
-  .progress i.miss { background: #c9c4b4; }
-  .progress i.cur { outline: 3px solid var(--primary); }
-  .emoji { font-size: 4rem; text-align: center; line-height: 1.1; }
-  .instr { text-align: center; font-size: 1.3rem; margin: 6px 0 4px; }
-  .feedback { text-align: center; font-size: 1.4rem; font-weight: bold; min-height: 1.8em; margin: 6px 0; }
+  .gametop { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .gamehead { display: flex; flex-direction: column; gap: 12px; }
+  .progress { display: flex; gap: 5px; }
+  .progress i { flex: 1; max-width: 46px; height: 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); display: inline-block; }
+  .progress i.done { background: var(--sun); border-color: var(--sun-d); }
+  .progress i.miss { background: #c9cfdf; }
+  .progress i.cur { background: var(--primary-soft); border-color: var(--primary); }
+  #gArea { display: flex; flex-direction: column; gap: 12px; }
+  .emoji { font-size: 3.8rem; text-align: center; line-height: 1.1; }
+  .instr { text-align: center; font-size: 1.25rem; font-weight: 700; margin: 0; }
+  .feedback { text-align: center; font-size: 1.3rem; font-weight: 800; min-height: 1.6em; margin: 0; }
   .feedback.ok { color: var(--ok); }
   .feedback.ko { color: var(--ko); }
 
-  .choices { display: grid; gap: 12px; grid-template-columns: 1fr; max-width: 480px; margin: 10px auto; }
+  .choices { display: grid; gap: 12px; grid-template-columns: 1fr; width: 100%; max-width: 480px; margin: 0 auto; }
   .choice {
-    background: #fff; border: 4px solid var(--bg2); border-radius: 18px; padding: 14px;
-    font-size: 2.1rem; font-weight: bold; letter-spacing: .05em; color: var(--text); box-shadow: var(--shadow);
+    background: var(--surface); border: 2px solid var(--line); border-radius: 20px; padding: 14px;
+    font-size: 2rem; font-weight: 800; letter-spacing: .04em; box-shadow: 0 4px 0 var(--line);
   }
-  .choice.good { border-color: var(--ok); background: #e3f9ea; }
-  .choice.bad { border-color: var(--ko); background: #fde8e6; opacity: .6; }
+  .choice.good { border-color: var(--ok); background: var(--ok-soft); box-shadow: 0 4px 0 var(--ok); }
+  .choice.bad { border-color: var(--ko); background: var(--ko-soft); opacity: .6; }
 
-  .slots { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 14px 0; }
+  .slots { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 6px 0; }
   .slot {
-    width: 2.6rem; height: 3.2rem; border-radius: 12px; background: #fff; border: 3px solid #d9d3c1;
-    font-size: 2rem; font-weight: bold; display: flex; align-items: center; justify-content: center;
+    width: 2.6rem; height: 3.2rem; border-radius: 12px; background: var(--surface-2); border: 2px solid var(--line);
+    font-size: 2rem; font-weight: 800; display: flex; align-items: center; justify-content: center;
   }
   .slot.fixed { border-color: transparent; background: transparent; width: 1.2rem; }
-  .slot.cur { border-color: var(--primary); box-shadow: 0 0 0 3px #d4ccff; }
-  .slot.ok { border-color: var(--ok); background: #e3f9ea; }
-  .slot.ko { border-color: var(--ko); background: #fde8e6; color: var(--ko); }
+  .slot.cur { border-color: var(--primary); background: var(--surface); box-shadow: 0 0 0 4px var(--primary-soft); }
+  .slot.ok { border-color: var(--ok); background: var(--ok-soft); }
+  .slot.ko { border-color: var(--ko); background: var(--ko-soft); color: var(--ko); }
   .slot.h-silent { border-color: var(--silent); border-style: dashed; }
   .slot.h-double { border-color: var(--double); border-style: dashed; }
   .slot.h-accent { border-color: var(--accent); border-style: dashed; }
 
-  .tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 14px 0; }
+  .tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 6px 0; }
   .tile {
-    width: 3.4rem; height: 3.6rem; border-radius: 14px; background: #ffd166; color: var(--text);
-    font-size: 2.1rem; font-weight: bold; box-shadow: 0 5px 0 #d9a520;
+    width: 3.4rem; height: 3.6rem; border-radius: 16px; background: var(--sun); color: var(--ink);
+    font-size: 2rem; font-weight: 800; box-shadow: 0 5px 0 var(--sun-d);
   }
+  .tile:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--sun-d); }
   .tile.used { visibility: hidden; }
 
-  .hunt { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 16px 0; }
+  .hunt { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 6px 0; }
   .hl {
-    min-width: 3.2rem; height: 4.2rem; border-radius: 14px; background: #fff; border: 3px solid #d9d3c1;
-    font-size: 2.6rem; font-weight: bold; color: var(--text); padding: 0 6px;
+    min-width: 3.2rem; height: 4.2rem; border-radius: 16px; background: var(--surface); border: 2px solid var(--line);
+    font-size: 2.6rem; font-weight: 800; padding: 0 6px; box-shadow: 0 4px 0 var(--line);
   }
-  .hl.fixed { border: none; background: none; min-width: 1rem; cursor: default; }
-  .hl.f-silent { border-color: var(--silent); color: var(--silent); background: #fde8e9; }
-  .hl.f-double { border-color: var(--double); color: var(--double); background: #dcecff; }
+  .hl.fixed { border: none; background: none; min-width: 1rem; cursor: default; box-shadow: none; }
+  .hl.f-silent { border-color: var(--silent); color: var(--silent); background: var(--ko-soft); }
+  .hl.f-double { border-color: var(--double); color: var(--double); background: var(--double-soft); }
   .hl.f-accent { border-color: var(--accent); color: var(--accent); background: #fff1dc; }
-  .hl.nope { background: #eee; color: #aaa; }
+  .hl.nope { background: var(--surface-2); color: #a9b0c6; }
 
   .shake { animation: shake .4s; }
   @keyframes shake { 20%,60% { transform: translateX(-7px); } 40%,80% { transform: translateX(7px); } }
   .bounce { animation: bounce .5s; }
   @keyframes bounce { 40% { transform: scale(1.15); } }
 
-  .kbd { max-width: 640px; margin: 10px auto 0; }
+  .kbd { width: 100%; max-width: 640px; margin: 4px auto 0; background: var(--surface-2); border-radius: 20px; padding: 10px 6px 4px; border: 1px solid var(--line); }
   .krow { display: flex; justify-content: center; gap: 5px; margin-bottom: 6px; }
-  .key {
-    flex: 1; min-width: 0; padding: 0; max-width: 52px; height: 52px; border-radius: 10px; background: #fff; color: var(--text);
-    font-size: 1.5rem; font-weight: bold; box-shadow: 0 4px 0 #cfc8b4; border: 2px solid #e8e2d0;
-  }
-  .key.acc { background: #fff1dc; border-color: #ffd9a3; flex: 0 0 44px; }
   .krow.accs { flex-wrap: wrap; }
-  .key.wide { max-width: 120px; flex: 2; font-size: 1.15rem; }
-  .key.ok { background: var(--ok); color: #fff; box-shadow: 0 4px 0 #1d8048; border-color: var(--ok); }
-  .key:active { transform: translateY(3px); box-shadow: 0 1px 0 #cfc8b4; }
-
-  .timer { height: 12px; background: #eee; border-radius: 6px; overflow: hidden; max-width: 400px; margin: 8px auto; }
-  .timer div { height: 100%; background: var(--primary); width: 100%; }
-
-  /* ---------- Fin / trophées ---------- */
-  .bigstars { font-size: 3rem; text-align: center; letter-spacing: .1em; }
-  .stickers { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; }
-  .sticker {
-    font-size: 2.6rem; text-align: center; background: #fff; border-radius: 16px; padding: 8px 0;
-    box-shadow: var(--shadow);
+  .key {
+    flex: 1; min-width: 0; padding: 0; max-width: 52px; height: 50px; border-radius: 12px; background: var(--surface);
+    font-size: 1.45rem; font-weight: 800; box-shadow: 0 3px 0 #d3daea; border: 1px solid var(--line);
   }
-  .sticker.locked { filter: grayscale(1); opacity: .35; }
+  .key.acc { background: #fff4e0; border-color: #ffdca6; flex: 0 0 44px; }
+  .key.wide { max-width: 140px; flex: 2; font-size: 1.1rem; }
+  .key.ok { background: var(--ok); color: #fff; box-shadow: 0 3px 0 var(--ok-d); border-color: var(--ok); }
+  .key:active { transform: translateY(2px); box-shadow: 0 1px 0 #d3daea; }
+
+  .timer { height: 12px; background: var(--surface-2); border-radius: 999px; overflow: hidden; width: 100%; max-width: 400px; margin: 0 auto; border: 1px solid var(--line); }
+  .timer div { height: 100%; background: var(--primary); width: 100%; border-radius: 999px; }
+
+  /* ---------- Fin de partie ---------- */
+  .endav { width: 160px; height: 200px; margin: 0 auto; border-radius: 26px; overflow: hidden; animation: dance 1.2s ease-in-out 2; }
+  .endav svg { width: 100%; height: 100%; display: block; }
+  @keyframes dance { 25% { transform: rotate(-5deg) translateY(-6px); } 75% { transform: rotate(5deg) translateY(-6px); } }
+  .gain { display: inline-flex; align-items: center; gap: 8px; background: #fff6dc; border: 1px solid #ffe39a; border-radius: 999px; padding: 8px 18px; font-size: 1.5rem; font-weight: 800; }
+
+  /* ---------- Mon héros ---------- */
+  .studio { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .stage { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 76px); display: flex; flex-direction: column; gap: 12px; }
+  .stage .frame { border-radius: var(--radius); overflow: hidden; aspect-ratio: 4 / 5; max-width: 100%; box-shadow: var(--shadow); background: var(--surface); }
+  .stage .frame svg { width: 100%; height: 100%; display: block; }
+  .namebox { display: flex; gap: 8px; align-items: center; }
+  .namebox input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); font-size: 1.1rem; font-weight: 700; background: var(--surface); user-select: text; -webkit-user-select: text; }
+  .buybar { display: flex; flex-direction: column; gap: 10px; background: var(--surface); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); border: 2px solid var(--sun); }
+  .buybar .bthumb { display: none; }
+  .buybar .bbody { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .buybar p { margin: 0; font-weight: 800; font-size: 1.1rem; text-align: center; }
+  .buybar .row { flex-wrap: nowrap; }
+  .buybar .btn { flex: 1; }
+  .shop { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .cats { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; scrollbar-width: thin; }
+  .cat {
+    flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 74px; padding: 10px 8px;
+    border-radius: 18px; background: var(--surface); border: 2px solid var(--line); font-size: .8rem; font-weight: 800; color: var(--ink-soft);
+  }
+  .cat span { font-size: 1.5rem; }
+  .cat.on { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+  .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sw { width: 38px; height: 38px; border-radius: 50%; border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--line); }
+  .sw.on { box-shadow: 0 0 0 3px var(--primary); }
+  .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+  .item {
+    background: var(--surface); border: 2px solid var(--line); border-radius: 20px; padding: 6px 6px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; font-weight: 800; font-size: .86rem;
+  }
+  .item .thumb { width: 100%; aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: var(--surface-2); }
+  .item .thumb svg { width: 100%; height: 100%; display: block; }
+  .item .nm { line-height: 1.2; text-align: center; min-height: 2.4em; display: flex; align-items: center; }
+  .item .tag { position: absolute; top: 10px; right: 10px; border-radius: 999px; padding: 2px 8px; font-size: .78rem; background: var(--sun); color: var(--ink); box-shadow: 0 2px 0 var(--sun-d); }
+  .item .tag.own { background: var(--ok); color: #fff; box-shadow: 0 2px 0 var(--ok-d); }
+  .item.on { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .item.try { border-color: var(--sun); box-shadow: 0 0 0 3px #fff0bf; }
+  .item.locked .thumb { filter: saturate(.75); }
 
   /* ---------- Parents ---------- */
+  .parents label { font-weight: 800; display: block; margin: 14px 0 6px; }
   .parents textarea {
-    width: 100%; min-height: 220px; border-radius: 14px; border: 2px solid var(--bg2); padding: 10px;
+    width: 100%; min-height: 220px; border-radius: 16px; border: 1px solid var(--line); padding: 12px; background: var(--surface-2);
     font-size: 1.05rem; line-height: 1.5; user-select: text; -webkit-user-select: text;
   }
-  .parents input[type=text] { padding: 8px 10px; border-radius: 10px; border: 2px solid var(--bg2); width: 100%; max-width: 360px; user-select: text; -webkit-user-select: text; }
-  .parents label { font-weight: bold; display: block; margin: 12px 0 4px; }
-  .preview { display: flex; flex-wrap: wrap; gap: 10px 22px; font-size: 1.6rem; font-weight: bold; }
+  .parents input[type=text], .parents select { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); width: 100%; max-width: 380px; background: var(--surface-2); user-select: text; -webkit-user-select: text; }
+  .parents .row { justify-content: flex-start; margin-top: 10px; }
+  .preview { display: flex; flex-wrap: wrap; gap: 12px 22px; font-size: 1.6rem; font-weight: 800; }
   .preview > div { position: relative; padding-top: 6px; }
-  .help { background: var(--bg); border-radius: 14px; padding: 10px 14px; font-size: .98rem; line-height: 1.5; }
-  .help code { background: #fff; padding: 1px 6px; border-radius: 6px; }
+  .help { background: var(--surface-2); border-radius: var(--radius-s); padding: 12px 14px; font-size: .97rem; line-height: 1.55; margin-top: 14px; border: 1px solid var(--line); }
+  .help code { background: var(--surface); padding: 1px 6px; border-radius: 6px; border: 1px solid var(--line); }
+  .stats { width: 100%; border-collapse: collapse; font-size: 1.02rem; }
+  .stats td { padding: 6px 4px; border-bottom: 1px solid var(--line); }
+  .gate input { font-size: 1.6rem; width: 140px; text-align: center; border-radius: 14px; border: 1px solid var(--line); padding: 8px; background: var(--surface-2); }
 
-  /* ---------- Confettis ---------- */
+  /* ---------- Fenêtre / confettis ---------- */
+  .modal { position: fixed; inset: 0; background: rgba(29,34,66,.45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  .modal .card { max-width: 420px; width: 100%; text-align: center; font-size: 1.2rem; display: flex; flex-direction: column; gap: 14px; }
+  .modal p { margin: 0; }
   .confetti { position: fixed; top: -40px; font-size: 1.8rem; pointer-events: none; z-index: 99; animation: fall linear forwards; }
   @keyframes fall { to { transform: translateY(110vh) rotate(540deg); } }
 
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition: none !important; }
+  }
+  @media (max-width: 720px) {
+    .studio { grid-template-columns: 1fr; }
+    .stage { position: static; display: grid; grid-template-columns: 132px minmax(0, 1fr); align-items: center; }
+    .stage .frame { grid-row: span 2; }
+    /* sur téléphone : l'essayage s'affiche en bas, au-dessus des onglets, avec l'aperçu du héros */
+    .buybar {
+      position: fixed; z-index: 25; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px));
+      bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 10px);
+      flex-direction: row; align-items: center; padding: 10px; box-shadow: 0 10px 30px rgba(29,34,66,.25);
+    }
+    .buybar .bthumb { display: block; width: 92px; height: 115px; flex: none; border-radius: 16px; overflow: hidden; }
+    .buybar .bthumb svg { width: 100%; height: 100%; display: block; }
+    .buybar .bbody { flex: 1; }
+    .buybar p { font-size: 1rem; }
+  }
   @media (max-width: 520px) {
-    header h1 { font-size: 1.1rem; }
-    .pill { padding: 5px 9px; font-size: .95rem; }
+    .logo { font-size: 1.05rem; }
+    .logo small { display: none; }
+    .card { padding: 16px; }
+    .hero { gap: 12px; }
+    .hero .av { width: 92px; height: 115px; }
+    .hero h2 { font-size: 1.3rem; }
+    .games { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .game-btn { padding: 14px 12px 12px; }
+    .game-btn .ico { width: 46px; height: 46px; font-size: 1.5rem; }
     .key { height: 46px; font-size: 1.25rem; }
     .key.acc { flex-basis: 38px; }
-    .card { padding: 14px; }
     .slot { width: 1.9rem; height: 2.7rem; font-size: 1.5rem; border-radius: 9px; }
     .slots { gap: 4px; }
     .slot.fixed { width: .8rem; }
     .hl { min-width: 2.2rem; height: 3.4rem; font-size: 1.9rem; padding: 0 3px; }
     .hunt { gap: 4px; }
     .tile { width: 2.9rem; height: 3.2rem; font-size: 1.8rem; }
+    .items { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .item { font-size: .78rem; }
   }
 </style>
 </head>
 <body>
 
 <header>
-  <h1 id="homeTitle" title="Accueil"><span>🦉</span> Les Mots Magiques</h1>
-  <div class="hbtns">
-    <button class="pill" id="starsPill" title="Mes autocollants">⭐ 0</button>
-    <button class="pill" id="soundPill" title="Son">🔊</button>
-    <button class="pill" id="parentPill" title="Espace parents">⚙️</button>
+  <div class="hwrap">
+    <button class="logo" id="homeTitle" title="Accueil"><span class="mark">🦉</span><span>Les Mots Magiques<small>Mes mots de la semaine</small></span></button>
+    <div class="hbtns">
+      <button class="pill stars" id="starsPill" title="Mes étoiles">⭐ 0</button>
+      <button class="pill icon" id="soundPill" title="Son">🔊</button>
+    </div>
   </div>
 </header>
 
 <main>
   <!-- ======== ACCUEIL ======== -->
   <section class="screen active" id="s-home">
-    <div class="card hello">
-      <div class="mascot">🦉</div>
-      <div class="bubble" id="helloText">Bonjour ! Je suis Plume, le hibou magique. Choisis un jeu pour apprendre tes mots !</div>
+    <div class="card hero">
+      <button class="av" id="homeAvatar" title="Mon héros"></button>
+      <div>
+        <h2 id="helloTitle">Bonjour !</h2>
+        <p id="helloText"></p>
+        <div class="level"><span class="lvl-badge" id="lvlBadge">Niv. 1</span><span class="bar"><i id="lvlBar" style="width:0%"></i></span><span id="lvlNext" class="muted"></span></div>
+      </div>
     </div>
 
     <div class="card">
-      <div class="listsel">
-        <b>📒 Ma liste :</b>
-        <select id="listSelect"></select>
+      <div class="listhead">
+        <h2>📒 Mes mots</h2>
+        <select id="listSelect" aria-label="Liste de mots"></select>
       </div>
       <div class="wordchips" id="homeWords"></div>
-      <p class="muted" style="margin:10px 0 0">Touche un mot pour l'entendre. ⭐⭐⭐ = mot bien connu !</p>
+      <p class="muted" style="margin:12px 0 0">Touche un mot pour l'entendre. ⭐⭐⭐ = mot bien connu !</p>
     </div>
 
+    <p class="eyebrow" style="margin:6px 4px -6px">Les jeux, du plus facile au plus difficile</p>
     <div class="games">
-      <button class="game-btn" data-game="learn"><span class="ico">👀</span><b>Découvrir</b><small>J'écoute et je regarde les pièges</small></button>
-      <button class="game-btn" data-game="hunt"><span class="ico">🔍</span><b>Chasse aux pièges</b><small>Je trouve les lettres pièges</small></button>
-      <button class="game-btn" data-game="quiz"><span class="ico">✅</span><b>Le bon mot</b><small>Je choisis la bonne écriture</small></button>
-      <button class="game-btn" data-game="scramble"><span class="ico">🔀</span><b>Lettres mélangées</b><small>Je remets les lettres dans l'ordre</small></button>
-      <button class="game-btn" data-game="photo"><span class="ico">📸</span><b>Le mot photo</b><small>Je photographie le mot, puis je l'écris</small></button>
-      <button class="game-btn" data-game="dictee"><span class="ico">🎧</span><b>Dictée magique</b><small>J'écoute et j'écris le mot</small></button>
+      <button class="game-btn gb3" data-game="learn"><span class="ico">👀</span><span class="lv">Niveau 1</span><b>Découvrir</b><small>J'écoute et je regarde les pièges</small></button>
+      <button class="game-btn gb4" data-game="hunt"><span class="ico">🔍</span><span class="lv">Niveau 1</span><b>Chasse aux pièges</b><small>Je trouve les lettres pièges</small></button>
+      <button class="game-btn gb2" data-game="quiz"><span class="ico">✅</span><span class="lv">Niveau 2</span><b>Le bon mot</b><small>Je choisis la bonne écriture</small></button>
+      <button class="game-btn gb5" data-game="scramble"><span class="ico">🔀</span><span class="lv">Niveau 2</span><b>Lettres mélangées</b><small>Je remets les lettres dans l'ordre</small></button>
+      <button class="game-btn gb6" data-game="photo"><span class="ico">📸</span><span class="lv">Niveau 3</span><b>Le mot photo</b><small>Je photographie le mot, puis je l'écris</small></button>
+      <button class="game-btn gb1" data-game="dictee"><span class="ico">🎧</span><span class="lv">Niveau 3</span><b>Dictée magique</b><small>J'écoute et j'écris le mot</small></button>
     </div>
   </section>
 
   <!-- ======== JEU ======== -->
   <section class="screen" id="s-game">
-    <div class="card">
+    <div class="card gamehead">
       <div class="gametop">
         <h2 id="gTitle">Jeu</h2>
-        <button class="btn alt" id="quitBtn">🏠</button>
+        <button class="btn alt round" id="quitBtn" title="Quitter le jeu">✕</button>
       </div>
       <div class="progress" id="gProgress"></div>
     </div>
@@ -312,50 +449,62 @@
 
   <!-- ======== FIN ======== -->
   <section class="screen" id="s-end">
-    <div class="card center">
-      <div class="mascot" style="font-size:5rem">🦉</div>
-      <h2 id="endTitle">Bravo !</h2>
-      <div class="bigstars" id="endStars"></div>
-      <p id="endText" style="font-size:1.25rem"></p>
-      <div id="endSticker"></div>
+    <div class="card center" style="display:flex;flex-direction:column;gap:14px;align-items:center">
+      <div class="endav" id="endAvatar"></div>
+      <h2 id="endTitle" style="font-size:1.7rem">Bravo !</h2>
+      <div class="gain" id="endGain">+0 ⭐</div>
+      <p id="endText" style="font-size:1.15rem;margin:0"></p>
       <div class="row">
         <button class="btn big green" id="againBtn">🔁 Rejouer</button>
+        <button class="btn big sun" id="endShop">🛍️ Boutique</button>
         <button class="btn big alt" id="endHome">🏠 Accueil</button>
       </div>
     </div>
   </section>
 
-  <!-- ======== AUTOCOLLANTS ======== -->
-  <section class="screen" id="s-stickers">
-    <div class="card">
-      <div class="gametop"><h2>🏆 Mes autocollants</h2><button class="btn alt" data-home>🏠</button></div>
-      <p id="stickerInfo" style="font-size:1.15rem"></p>
-      <div class="stickers" id="stickerGrid"></div>
+  <!-- ======== MON HÉROS ======== -->
+  <section class="screen" id="s-hero">
+    <div class="studio">
+      <div class="stage">
+        <div class="frame" id="heroStage"></div>
+        <div class="namebox">
+          <input type="text" id="heroName" maxlength="14" placeholder="Son prénom…" aria-label="Nom du héros">
+        </div>
+        <div class="muted" id="heroInfo" style="font-weight:700"></div>
+        <div class="buybar" id="buyBar" hidden></div>
+      </div>
+      <div class="shop">
+        <div class="cats" id="heroCats"></div>
+        <div class="card" style="display:flex;flex-direction:column;gap:12px">
+          <div class="gametop"><h2 id="catTitle">Personnage</h2></div>
+          <div class="swatches" id="heroSwatches"></div>
+          <div class="items" id="heroItems"></div>
+        </div>
+      </div>
     </div>
   </section>
 
   <!-- ======== PARENTS : porte ======== -->
   <section class="screen" id="s-gate">
-    <div class="card center">
+    <div class="card center gate" style="display:flex;flex-direction:column;gap:12px;align-items:center">
       <h2>🔒 Espace parents</h2>
-      <p style="font-size:1.2rem">Pour entrer, réponds à cette question :</p>
-      <p id="gateQ" style="font-size:2rem;font-weight:bold"></p>
+      <p style="font-size:1.15rem;margin:0">Pour entrer, réponds à cette question :</p>
+      <p id="gateQ" style="font-size:2rem;font-weight:800;margin:0"></p>
       <div class="row">
-        <input type="text" inputmode="numeric" id="gateA" style="font-size:1.6rem;width:140px;text-align:center;border-radius:12px;border:2px solid var(--bg2);padding:6px">
+        <input type="text" inputmode="numeric" id="gateA" aria-label="Réponse">
         <button class="btn" id="gateOk">Entrer</button>
       </div>
-      <div class="row"><button class="btn alt" data-home>🏠 Retour</button></div>
     </div>
   </section>
 
   <!-- ======== PARENTS ======== -->
   <section class="screen parents" id="s-parents">
     <div class="card">
-      <div class="gametop"><h2>⚙️ Espace parents</h2><button class="btn alt" data-home>🏠</button></div>
+      <h2>✏️ Listes de mots</h2>
 
-      <label for="pListSelect">Liste de mots</label>
-      <div class="row" style="justify-content:flex-start">
-        <select id="pListSelect" style="padding:8px;border-radius:10px;border:2px solid var(--bg2)"></select>
+      <label for="pListSelect">Liste</label>
+      <select id="pListSelect"></select>
+      <div class="row">
         <button class="btn alt" id="pNew">➕ Nouvelle liste</button>
         <button class="btn red" id="pDel">🗑️ Supprimer</button>
       </div>
@@ -365,7 +514,7 @@
 
       <label for="pText">Les mots (un mot par ligne)</label>
       <textarea id="pText" spellcheck="false"></textarea>
-      <div class="row" style="justify-content:flex-start">
+      <div class="row" style="align-items:center">
         <button class="btn green" id="pSave">💾 Enregistrer</button>
         <span id="pSaved" class="muted"></span>
       </div>
@@ -393,20 +542,31 @@
     <div class="card">
       <h2>🔊 Voix</h2>
       <label for="pVoice">Voix utilisée</label>
-      <select id="pVoice" style="padding:8px;border-radius:10px;border:2px solid var(--bg2);max-width:100%"></select>
+      <select id="pVoice"></select>
       <p id="pVoiceWarn" class="muted"></p>
       <label for="pRate">Vitesse de lecture : <span id="pRateVal"></span></label>
-      <input type="range" id="pRate" min="0.5" max="1.2" step="0.05" style="width:100%;max-width:360px">
-      <div class="row" style="justify-content:flex-start"><button class="btn alt" id="pTest">▶️ Tester la voix</button></div>
+      <input type="range" id="pRate" min="0.5" max="1.2" step="0.05" style="width:100%;max-width:380px">
+      <div class="row"><button class="btn alt" id="pTest">▶️ Tester la voix</button></div>
     </div>
 
     <div class="card">
-      <h2>📊 Progrès</h2>
+      <h2>📊 Progrès et récompenses</h2>
       <div id="pStats"></div>
-      <div class="row" style="justify-content:flex-start"><button class="btn red" id="pReset">Remettre les progrès à zéro</button></div>
+      <div class="row">
+        <button class="btn sun" id="pGift">🎁 Offrir 5 étoiles</button>
+        <button class="btn red" id="pReset">Remettre les progrès à zéro</button>
+      </div>
     </div>
   </section>
 </main>
+
+<nav class="tabbar" aria-label="Navigation">
+  <div class="in">
+    <button class="tab on" data-nav="home"><span class="ti">🎮</span>Jouer</button>
+    <button class="tab" data-nav="hero"><span class="ti">🧒</span>Mon héros</button>
+    <button class="tab" data-nav="parents"><span class="ti">🔒</span>Parents</button>
+  </div>
+</nav>
 
 <script>
 (() => {
@@ -436,12 +596,16 @@ le temps | ⏰` }
 const STORE = 'motsMagiques.v1';
 function defaultState() {
   return { lists: JSON.parse(JSON.stringify(DEFAULT_LISTS)), current: 'exemple',
-           stars: 0, mastery: {}, voice: '', rate: 0.85, sound: true };
+           stars: 0, total: 0, mastery: {}, voice: '', rate: 0.85, sound: true, owned: [], avatar: null };
 }
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(STORE));
-    if (s && Array.isArray(s.lists) && s.lists.length) return Object.assign(defaultState(), s);
+    if (s && Array.isArray(s.lists) && s.lists.length) {
+      // anciennes sauvegardes : les étoiles déjà gagnées comptent pour le niveau
+      if (s.total === undefined) s.total = s.stars || 0;
+      return Object.assign(defaultState(), s);
+    }
   } catch (e) {}
   return defaultState();
 }
@@ -666,6 +830,9 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+  document.body.classList.toggle('in-game', id === 's-game');
+  const tab = id === 's-hero' ? 'hero' : (id === 's-gate' || id === 's-parents') ? 'parents' : 'home';
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.nav === tab));
   window.scrollTo(0, 0);
 }
 function wordHTML(e, plain) {
@@ -728,9 +895,6 @@ function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { co
 /* =====================================================================
    5. Accueil
    ===================================================================== */
-const STICKERS = ['🐶', '🐱', '🦊', '🐼', '🐨', '🦁', '🐯', '🐸', '🐵', '🦄', '🐙', '🦖', '🐢', '🐬', '🦋', '🐞',
-  '🚀', '🚒', '🚂', '⚽', '🏀', '🎸', '🎨', '🍕', '🍦', '🧁', '🌈', '🌋', '🏰', '👑', '🦸', '🧙', '🐉', '🛸', '🏆', '💎'];
-const STARS_PER_STICKER = 5;
 const mastery = e => state.mastery[e.key] || 0;
 const starsTxt = m => m >= 3 ? '⭐⭐⭐' : m === 2 ? '⭐⭐' : m === 1 ? '⭐' : '';
 
@@ -748,28 +912,25 @@ function renderHome() {
     ? ents.map((e, i) => `<button class="chip" data-i="${i}">${e.emoji ? esc(e.emoji) + ' ' : ''}${esc(e.word)}<span class="st">${starsTxt(mastery(e))}</span></button>`).join('')
     : '<span class="muted">Cette liste est vide. Demande à un parent d\'ajouter des mots (⚙️).</span>';
   box.querySelectorAll('.chip').forEach(b => b.onclick = () => say(ents[+b.dataset.i].word));
+  box.querySelectorAll('.chip').forEach(b => { if (mastery(ents[+b.dataset.i]) >= 3) b.classList.add('known'); });
   const known = ents.filter(e => mastery(e) >= 3).length;
+  const name = state.avatar.name;
+  $('#homeAvatar').innerHTML = avatarSVG(state.avatar, 'full');
+  $('#helloTitle').textContent = name ? `Bonjour ${name} !` : 'Bonjour !';
   $('#helloText').textContent = ents.length && known === ents.length
-    ? 'Waouh ! Tu connais tous les mots de la liste ! Tu peux continuer à t\'entraîner. 🏆'
-    : `Bonjour ! Je suis Plume, le hibou magique. Tu as ${ents.length} mot${ents.length > 1 ? 's' : ''} à apprendre${known ? ` (déjà ${known} bien connu${known > 1 ? 's' : ''} !)` : ''}. Choisis un jeu !`;
+    ? 'Waouh ! Tu connais tous les mots de la liste ! Continue pour gagner des étoiles. 🏆'
+    : `Tu as ${ents.length} mot${ents.length > 1 ? 's' : ''} à apprendre${known ? ` (déjà ${known} bien connu${known > 1 ? 's' : ''} !)` : ''}. Gagne des étoiles pour habiller ton héros !`;
+  const lv = levelInfo();
+  $('#lvlBadge').textContent = 'Niv. ' + lv.level;
+  $('#lvlBar').style.width = Math.round(lv.inLevel / STARS_PER_LEVEL * 100) + '%';
+  $('#lvlNext').textContent = `${lv.inLevel}/${STARS_PER_LEVEL} ⭐`;
 }
 $('#listSelect').onchange = ev => { state.current = ev.target.value; save(); renderHome(); };
 $('#homeTitle').onclick = goHome;
-document.querySelectorAll('[data-home]').forEach(b => b.onclick = goHome);
-function goHome() { if (hasTTS) speechSynthesis.cancel(); clearTimers(); game = null; renderHome(); show('s-home'); }
+function goHome() { if (hasTTS) speechSynthesis.cancel(); clearTimers(); game = null; typing = null; renderHome(); show('s-home'); }
 $('#soundPill').onclick = () => { state.sound = !state.sound; save(); updateHeader(); if (!state.sound && hasTTS) speechSynthesis.cancel(); };
-$('#starsPill').onclick = renderStickers;
+$('#starsPill').onclick = () => openHero();
 document.querySelectorAll('.game-btn').forEach(b => b.onclick = () => startGame(b.dataset.game));
-
-function renderStickers() {
-  const n = Math.min(STICKERS.length, Math.floor(state.stars / STARS_PER_STICKER));
-  const left = STARS_PER_STICKER - (state.stars % STARS_PER_STICKER);
-  $('#stickerInfo').textContent = n >= STICKERS.length
-    ? `Tu as tous les autocollants ! Tu as ${state.stars} étoiles. 🏆`
-    : `Tu as ${state.stars} étoile${state.stars > 1 ? 's' : ''} ⭐. Encore ${left} étoile${left > 1 ? 's' : ''} pour gagner un nouvel autocollant !`;
-  $('#stickerGrid').innerHTML = STICKERS.map((s, i) => `<div class="sticker ${i < n ? '' : 'locked'}">${i < n ? s : '❔'}</div>`).join('');
-  show('s-stickers');
-}
 
 /* =====================================================================
    6. Moteur de jeu
@@ -823,6 +984,7 @@ function startGame(type) {
 $('#quitBtn').onclick = goHome;
 $('#againBtn').onclick = () => game && startGame(game.type);
 $('#endHome').onclick = goHome;
+$('#endShop').onclick = () => openHero();
 
 function renderProgress() {
   $('#gProgress').innerHTML = game.words.map((_, i) => {
@@ -846,7 +1008,7 @@ function finishWord(area) {
   const ok = !game.penalty;
   game.results[game.i] = ok;
   if (ok) {
-    game.earned++; state.stars++;
+    game.earned++; earn(1);
     if (!game.hint) state.mastery[e.key] = Math.min(5, mastery(e) + 1);
     beep(true); confetti();
   } else {
@@ -865,23 +1027,26 @@ function finishWord(area) {
 }
 function endGame() {
   clearTimers();
-  const n = game.words.length, s = game.earned;
+  const n = game.words.length;
+  let gain = game.earned, msg;
+  $('#endAvatar').innerHTML = avatarSVG(state.avatar, 'full');
   if (game.type === 'learn') {
+    gain = 2;
     $('#endTitle').textContent = 'Tu as découvert tous les mots ! 👏';
-    $('#endStars').textContent = '🦉📚';
-    $('#endText').textContent = 'Maintenant, essaie la « Chasse aux pièges » ou « Le bon mot » !';
-    $('#endSticker').innerHTML = '';
-    say('Bravo, tu as découvert tous les mots ! Maintenant, essaie un jeu.');
+    msg = 'Maintenant, essaie la « Chasse aux pièges » ou « Le bon mot » !';
+    say('Bravo, tu as découvert tous les mots ! Tu gagnes 2 étoiles.');
   } else {
-    $('#endTitle').textContent = s === n ? 'Parfait ! 🏆' : s >= n / 2 ? 'Bravo ! 🎉' : 'Bien joué, continue ! 💪';
-    $('#endStars').textContent = '⭐'.repeat(s) || '💪';
-    $('#endText').textContent = `Tu as gagné ${s} étoile${s > 1 ? 's' : ''} sur ${n}.`;
-    const before = Math.floor((state.stars - s) / STARS_PER_STICKER), after = Math.floor(state.stars / STARS_PER_STICKER);
-    $('#endSticker').innerHTML = after > before && before < STICKERS.length
-      ? `<p style="font-size:1.3rem">Nouvel autocollant gagné : <span style="font-size:3rem">${STICKERS[Math.min(after, STICKERS.length) - 1]}</span></p>` : '';
-    if (s) confetti();
-    say(s === n ? 'Parfait ! Tu as gagné toutes les étoiles !' : `Bravo ! Tu as gagné ${s} étoile${s > 1 ? 's' : ''}.`);
+    const perfect = game.earned === n;
+    if (perfect) gain += 3;   // bonus partie parfaite
+    $('#endTitle').textContent = perfect ? 'Parfait ! 🏆' : game.earned >= n / 2 ? 'Bravo ! 🎉' : 'Bien joué, continue ! 💪';
+    msg = `${game.earned} mot${game.earned > 1 ? 's' : ''} réussi${game.earned > 1 ? 's' : ''} du premier coup sur ${n}.` + (perfect ? ' Bonus partie parfaite : +3 ⭐ !' : '');
+    say(perfect ? 'Parfait ! Tu gagnes un bonus de trois étoiles !' : `Bravo ! Tu as gagné ${gain} étoile${gain > 1 ? 's' : ''}.`);
   }
+  // les étoiles des mots sont déjà comptées ; on ajoute seulement les bonus
+  const levelUp = earn(gain - (game.type === 'learn' ? 0 : game.earned));
+  $('#endGain').textContent = `+${gain} ⭐`;
+  $('#endText').textContent = msg + (levelUp ? ` Tu passes au niveau ${levelInfo().level} ! 🚀` : '') + ` Tu as ${state.stars} ⭐ à dépenser.`;
+  if (gain) confetti();
   show('s-end');
 }
 
@@ -1301,7 +1466,7 @@ function renderPhoto() {
    7. Espace parents
    ===================================================================== */
 let gateAnswer = 0;
-$('#parentPill').onclick = () => {
+function openGate() {
   const a = 3 + Math.floor(Math.random() * 7), b = 3 + Math.floor(Math.random() * 7);
   gateAnswer = a * b;
   $('#gateQ').textContent = `${a} × ${b} = ?`;
@@ -1310,7 +1475,7 @@ $('#parentPill').onclick = () => {
   clearTimers(); typing = null;
   show('s-gate');
   setTimeout(() => $('#gateA').focus(), 100);
-};
+}
 $('#gateOk').onclick = () => {
   if (parseInt($('#gateA').value, 10) === gateAnswer) { renderParents(); show('s-parents'); }
   else { anim($('#gateA'), 'shake'); $('#gateA').value = ''; }
@@ -1340,10 +1505,10 @@ function renderPreview() {
 function renderStats() {
   const ents = entries();
   const rows = ents.map(e => `<tr><td>${esc(e.word)}</td><td>${starsTxt(mastery(e)) || '—'}</td></tr>`).join('');
-  $('#pStats').innerHTML = `<p>Étoiles gagnées au total : <b>${state.stars}</b>.</p>
+  $('#pStats').innerHTML = `<p>Étoiles gagnées au total : <b>${state.total}</b> (niveau ${levelInfo().level}), dont <b>${state.stars}</b> encore à dépenser dans la boutique du héros.</p>
     <p class="muted">Un mot gagne un niveau quand il est réussi du premier coup sans aide, et en perd un en cas d'erreur.
     À ⭐⭐⭐, le mot est considéré comme bien connu (il revient moins souvent dans les jeux).</p>
-    <table style="font-size:1.05rem;border-collapse:collapse">${rows}</table>`;
+    <table class="stats">${rows}</table>`;
 }
 $('#pText').addEventListener('input', () => { renderPreview(); $('#pSaved').textContent = '(modifications non enregistrées)'; });
 $('#pName').addEventListener('input', () => { $('#pSaved').textContent = '(modifications non enregistrées)'; });
@@ -1376,8 +1541,8 @@ $('#pDel').onclick = () => {
   });
 };
 $('#pReset').onclick = () => {
-  popup('Remettre toutes les étoiles et les progrès à zéro ?', () => {
-    state.stars = 0; state.mastery = {};
+  popup('Remettre les étoiles et les progrès des mots à zéro ? (Le héros et ses objets sont gardés.)', () => {
+    state.stars = 0; state.total = 0; state.mastery = {};
     save(); updateHeader(); renderStats();
   });
 };
@@ -1395,15 +1560,350 @@ function fillVoices() {
 }
 $('#pVoice').onchange = ev => { state.voice = ev.target.value; save(); };
 $('#pRate').oninput = ev => { state.rate = +ev.target.value; $('#pRateVal').textContent = Math.round(state.rate * 100) + ' %'; save(); };
+$('#pGift').onclick = () => { earn(5); renderStats(); popup('5 étoiles offertes ! 🎁'); };
 $('#pTest').onclick = () => say('Bonjour ! Je vais t\'aider à apprendre tes mots. La forêt, le chat, la pomme.');
+
+/* =====================================================================
+   7b. Mon héros : personnage, boutique et niveaux
+   ===================================================================== */
+const SKIN = ['#ffdbc1', '#f3c19e', '#d9a074', '#b27a51', '#8a5735', '#5e3a22',
+  '#9fd8ff', '#a9ec9b', '#d6b4ff', '#ffb3cf', '#ffd166', '#c7cbd6', '#ffffff'];
+const HAIR = ['#2b1d14', '#6b3f1f', '#b5651d', '#f2c14e', '#ece6d6', '#ff6f91', '#5aa9ff', '#7bd389', '#9b5de5', '#ff8c42'];
+const CLOTH = ['#ff6b4a', '#ffc83d', '#1fb57a', '#3b9cff', '#3b4fe0', '#9b6bff', '#ff5fa8', '#1d2242', '#ffffff', '#8d6e63', '#7a8699'];
+
+// key : propriété du personnage ; colorKey : couleur réglable dans cet onglet ; view : cadrage des vignettes
+const CATALOG = [
+  { key: 'species', colorKey: 'skin', palette: SKIN, label: 'Personnage', icon: '🧒', view: 'bust', items: [
+    { id: 'humain', name: 'Enfant', price: 0 }, { id: 'chat', name: 'Chat', price: 0 },
+    { id: 'ours', name: 'Ourson', price: 10 }, { id: 'lapin', name: 'Lapin', price: 10 },
+    { id: 'robot', name: 'Robot', price: 20 }, { id: 'monstre', name: 'Petit monstre', price: 25 },
+    { id: 'licorne', name: 'Licorne', price: 35 }] },
+  { key: 'eyes', label: 'Yeux', icon: '👀', view: 'face', items: [
+    { id: 'rond', name: 'Ronds', price: 0 }, { id: 'joyeux', name: 'Joyeux', price: 0 },
+    { id: 'grands', name: 'Grands yeux', price: 5 }, { id: 'clin', name: "Clin d'œil", price: 8 },
+    { id: 'endormis', name: 'Endormis', price: 8 }, { id: 'coeurs', name: 'Cœurs', price: 12 },
+    { id: 'etoiles', name: 'Étoiles', price: 15 }] },
+  { key: 'nose', label: 'Nez', icon: '👃', view: 'face', items: [
+    { id: 'point', name: 'Petit nez', price: 0 }, { id: 'triangle', name: 'Museau', price: 0 },
+    { id: 'bouton', name: 'Nez rond', price: 5 }, { id: 'coeur', name: 'Nez cœur', price: 8 },
+    { id: 'clown', name: 'Nez de clown', price: 12 }] },
+  { key: 'mouth', label: 'Bouche', icon: '👄', view: 'face', items: [
+    { id: 'sourire', name: 'Sourire', price: 0 }, { id: 'chat', name: 'Bouche de chat', price: 0 },
+    { id: 'rire', name: 'Grand rire', price: 5 }, { id: 'o', name: 'Surpris', price: 5 },
+    { id: 'dents', name: 'Toutes dents', price: 8 }, { id: 'langue', name: 'Tire la langue', price: 10 }] },
+  { key: 'hair', colorKey: 'hairColor', palette: HAIR, label: 'Cheveux', icon: '💇', view: 'head', items: [
+    { id: 'aucun', name: 'Sans', price: 0 }, { id: 'court', name: 'Courts', price: 0 },
+    { id: 'meche', name: 'Mèche', price: 5 }, { id: 'pics', name: 'En pics', price: 8 },
+    { id: 'long', name: 'Longs', price: 8 }, { id: 'couettes', name: 'Couettes', price: 10 },
+    { id: 'chignon', name: 'Chignon', price: 10 }, { id: 'afro', name: 'Frisés', price: 12 }] },
+  { key: 'top', colorKey: 'topColor', palette: CLOTH, label: 'Haut', icon: '👕', view: 'body', items: [
+    { id: 'tshirt', name: 'T-shirt', price: 0 }, { id: 'raye', name: 'Marinière', price: 6 },
+    { id: 'chemise', name: 'Chemise', price: 8 }, { id: 'capuche', name: 'Sweat à capuche', price: 12 },
+    { id: 'robe', name: 'Robe', price: 12 }, { id: 'foot', name: 'Maillot de foot', price: 15 },
+    { id: 'super', name: 'Super-héros', price: 30 }] },
+  { key: 'bottom', colorKey: 'bottomColor', palette: CLOTH, label: 'Bas', icon: '👖', view: 'legs', items: [
+    { id: 'pantalon', name: 'Pantalon', price: 0 }, { id: 'short', name: 'Short', price: 0 },
+    { id: 'jean', name: 'Jean', price: 6 }, { id: 'jupe', name: 'Jupe', price: 6 }] },
+  { key: 'shoes', colorKey: 'shoesColor', palette: CLOTH, label: 'Chaussures', icon: '👟', view: 'feet', items: [
+    { id: 'baskets', name: 'Baskets', price: 0 }, { id: 'ballerines', name: 'Ballerines', price: 5 },
+    { id: 'sandales', name: 'Sandales', price: 5 }, { id: 'bottes', name: 'Bottes', price: 8 },
+    { id: 'pluie', name: 'Bottes de pluie', price: 10 }] },
+  { key: 'hat', label: 'Chapeaux', icon: '🎩', view: 'head', items: [
+    { id: 'aucun', name: 'Sans', price: 0 }, { id: 'noeud', name: 'Nœud', price: 5 },
+    { id: 'fleur', name: 'Fleur', price: 5 }, { id: 'casquette', name: 'Casquette', price: 8 },
+    { id: 'bonnet', name: 'Bonnet', price: 8 }, { id: 'casque', name: 'Casque audio', price: 12 },
+    { id: 'cowboy', name: 'Cow-boy', price: 15 }, { id: 'magicien', name: 'Magicien', price: 20 },
+    { id: 'couronne', name: 'Couronne', price: 30 }] },
+  { key: 'glasses', label: 'Lunettes', icon: '🕶️', view: 'face', items: [
+    { id: 'aucun', name: 'Sans', price: 0 }, { id: 'rondes', name: 'Rondes', price: 5 },
+    { id: 'soleil', name: 'De soleil', price: 10 }, { id: 'coeur', name: 'Cœurs', price: 12 },
+    { id: 'masque', name: 'Masque de héros', price: 15 }] },
+  { key: 'bg', label: 'Décor', icon: '🏞️', view: 'full', items: [
+    { id: 'ciel', name: 'Ciel', price: 0 }, { id: 'menthe', name: 'Menthe', price: 0 },
+    { id: 'peche', name: 'Pêche', price: 0 }, { id: 'plage', name: 'Plage', price: 10 },
+    { id: 'jungle', name: 'Jungle', price: 12 }, { id: 'arcenciel', name: 'Arc-en-ciel', price: 15 },
+    { id: 'nuit', name: 'Nuit étoilée', price: 15 }, { id: 'espace', name: 'Espace', price: 25 }] }
+];
+const DEFAULT_AVATAR = {
+  species: 'humain', skin: '#f3c19e', eyes: 'rond', nose: 'point', mouth: 'sourire',
+  hair: 'court', hairColor: '#6b3f1f', top: 'tshirt', topColor: '#3b9cff', bottom: 'pantalon', bottomColor: '#1d2242',
+  shoes: 'baskets', shoesColor: '#ff6b4a', hat: 'aucun', glasses: 'aucun', bg: 'ciel', name: ''
+};
+// cadrages : 'full' pour la grande image (4/5), les autres sont carrés pour les vignettes
+const VIEWS = { full: '0 0 200 250', bust: '18 -6 164 164', face: '50 36 100 100', head: '22 -10 156 156',
+  body: '22 98 156 156', legs: '45 168 110 110', feet: '58 196 84 84' };
+// couleur conseillée quand on choisit un personnage (on peut la changer ensuite)
+const SPECIES_COLOR = { humain: '#f3c19e', chat: '#ffd166', ours: '#b27a51', lapin: '#ffffff', robot: '#c7cbd6', monstre: '#a9ec9b', licorne: '#d6b4ff' };
+
+// Éclaircit (p > 0) ou assombrit (p < 0) une couleur #rrggbb.
+function shade(hex, p) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = c => Math.max(0, Math.min(255, Math.round(p < 0 ? c * (1 + p) : c + (255 - c) * p)));
+  return '#' + [n >> 16, (n >> 8) & 255, n & 255].map(f).map(v => v.toString(16).padStart(2, '0')).join('');
+}
+const heartPath = (x, y, s) => `M${x},${y + s * .9} C${x - s * 1.6},${y - s * .1} ${x - s * .7},${y - s * 1.3} ${x},${y - s * .35} C${x + s * .7},${y - s * 1.3} ${x + s * 1.6},${y - s * .1} ${x},${y + s * .9}Z`;
+function starPath(x, y, r) {
+  let d = '';
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r;
+    d += (i ? 'L' : 'M') + (x + rr * Math.cos(a)).toFixed(1) + ',' + (y + rr * Math.sin(a)).toFixed(1);
+  }
+  return d + 'Z';
+}
+const INK = '#1d2242';
+
+function bgSVG(id) {
+  const R = (f) => `<rect x="-40" y="-40" width="280" height="330" fill="${f}"/>`;
+  switch (id) {
+    case 'menthe': return R('#c9f2e1') + `<circle cx="170" cy="30" r="40" fill="#b3ead3"/>`;
+    case 'peche': return R('#ffe0cc') + `<circle cx="30" cy="40" r="44" fill="#ffd0b3"/>`;
+    case 'plage': return R('#bfe6ff') + `<circle cx="160" cy="40" r="22" fill="#ffd166"/><path d="M-40,200 Q100,180 240,200 L240,290 L-40,290Z" fill="#ffe4a8"/><path d="M-40,196 Q30,186 100,196 T240,196" stroke="#7cc8ff" stroke-width="6" fill="none"/>`;
+    case 'jungle': return R('#d4f5c9') + `<path d="M-10,40 Q30,10 60,50 Q30,40 -10,60Z M210,30 Q170,0 140,50 Q170,30 210,60Z M-10,150 Q40,120 50,170 Q20,150 -10,180Z M210,140 Q160,120 160,170 Q180,150 210,180Z" fill="#6cc96a"/><path d="M-40,230 L240,230 L240,290 L-40,290Z" fill="#9ad98a"/>`;
+    case 'arcenciel': return R('#f2f7ff') + ['#ff6b6b', '#ffb84d', '#ffe066', '#7bd389', '#5aa9ff', '#a57cff'].map((c, i) => `<path d="M${-10 + i * 12},250 A${110 - i * 12},${110 - i * 12} 0 0 1 ${210 - i * 12},250" stroke="${c}" stroke-width="12" fill="none"/>`).join('');
+    case 'nuit': return R('#1f2a5c') + `<circle cx="160" cy="40" r="18" fill="#fff3b0"/><circle cx="168" cy="34" r="16" fill="#1f2a5c"/>` + [[30, 30], [60, 70], [20, 120], [180, 110], [150, 180], [40, 200], [100, 20]].map(([x, y]) => `<path d="${starPath(x, y, 5)}" fill="#fff3b0"/>`).join('');
+    case 'espace': return R('#151a3d') + `<circle cx="40" cy="50" r="22" fill="#ff8c69"/><ellipse cx="40" cy="50" rx="36" ry="8" fill="none" stroke="#ffd166" stroke-width="4"/><circle cx="170" cy="190" r="14" fill="#7bd389"/>` + [[150, 30], [100, 15], [180, 80], [20, 150], [60, 220], [130, 230]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2" fill="#fff"/>`).join('');
+    default: return R('#cfe7ff') + `<circle cx="40" cy="40" r="18" fill="#fff" opacity=".8"/><circle cx="58" cy="44" r="14" fill="#fff" opacity=".8"/>`;
+  }
+}
+
+function avatarSVG(a, view) {
+  a = Object.assign({}, DEFAULT_AVATAR, a);
+  const sk = a.skin, skD = shade(sk, -.18), hc = a.hairColor, tc = a.topColor, tcD = shade(tc, -.2);
+  const bc = a.bottomColor, bcD = shade(bc, -.2), sc = a.shoesColor, scD = shade(sc, -.25);
+  const robot = a.species === 'robot';
+  const out = [];
+  const push = s => out.push(s);
+  push(bgSVG(a.bg));
+
+  // --- derrière ---
+  if (a.hair === 'long') push(`<path d="M50,70 Q50,24 100,24 Q150,24 150,70 L156,158 Q100,170 44,158Z" fill="${hc}"/>`);
+  if (a.hair === 'couettes') push(`<circle cx="44" cy="92" r="17" fill="${hc}"/><circle cx="156" cy="92" r="17" fill="${hc}"/>`);
+  if (a.hair === 'afro') push(`<circle cx="100" cy="68" r="60" fill="${hc}"/>`);
+  if (a.top === 'super') push(`<path d="M62,124 L138,124 L162,232 Q100,240 38,232Z" fill="${shade(tc, -.35)}"/>`);
+  if (a.top === 'capuche') push(`<ellipse cx="100" cy="122" rx="50" ry="16" fill="${tcD}"/>`);
+
+  // --- jambes, bas, chaussures ---
+  push(`<rect x="76" y="186" width="20" height="48" rx="8" fill="${sk}"/><rect x="104" y="186" width="20" height="48" rx="8" fill="${sk}"/>`);
+  if (a.bottom === 'pantalon' || a.bottom === 'jean') {
+    push(`<rect x="73" y="184" width="26" height="48" rx="7" fill="${bc}"/><rect x="101" y="184" width="26" height="48" rx="7" fill="${bc}"/><rect x="70" y="182" width="60" height="16" rx="6" fill="${bc}"/>`);
+    if (a.bottom === 'jean') push(`<path d="M86,198 L86,230 M114,198 L114,230" stroke="${shade(bc, .35)}" stroke-width="2" stroke-dasharray="3 3"/><path d="M76,190 Q84,196 92,190" stroke="${shade(bc, .35)}" stroke-width="2" fill="none"/>`);
+  } else if (a.bottom === 'short') {
+    push(`<rect x="72" y="184" width="27" height="26" rx="6" fill="${bc}"/><rect x="101" y="184" width="27" height="26" rx="6" fill="${bc}"/><rect x="70" y="182" width="60" height="14" rx="6" fill="${bc}"/>`);
+  } else if (a.bottom === 'jupe') {
+    push(`<path d="M68,182 L132,182 L144,214 Q100,222 56,214Z" fill="${bc}"/><path d="M84,186 L80,216 M100,186 L100,218 M116,186 L120,216" stroke="${bcD}" stroke-width="2"/>`);
+  }
+  const feet = [[86, -1], [114, 1]];
+  feet.forEach(([x, d]) => {
+    const fx = x + d * 4;
+    switch (a.shoes) {
+      case 'bottes': push(`<rect x="${x - 12}" y="208" width="24" height="30" rx="6" fill="${sc}"/><ellipse cx="${fx}" cy="238" rx="15" ry="7" fill="${sc}"/><rect x="${x - 12}" y="208" width="24" height="6" rx="3" fill="${scD}"/>`); break;
+      case 'pluie': push(`<rect x="${x - 12}" y="206" width="24" height="32" rx="7" fill="${sc}"/><ellipse cx="${fx}" cy="238" rx="15" ry="7" fill="${sc}"/><rect x="${x - 7}" y="210" width="4" height="20" rx="2" fill="#fff" opacity=".55"/><rect x="${x - 15}" y="240" width="30" height="5" rx="2" fill="${scD}"/>`); break;
+      case 'sandales': push(`<ellipse cx="${fx}" cy="238" rx="14" ry="6" fill="${sk}"/><rect x="${fx - 15}" y="240" width="30" height="5" rx="2" fill="${scD}"/><path d="M${fx - 11},236 L${fx + 11},236 M${fx - 6},231 L${fx + 6},241" stroke="${sc}" stroke-width="4" stroke-linecap="round"/>`); break;
+      case 'ballerines': push(`<ellipse cx="${fx}" cy="238" rx="14" ry="7" fill="${sc}"/><ellipse cx="${fx}" cy="235" rx="7" ry="3" fill="${sk}"/><circle cx="${fx + d * 6}" cy="234" r="3" fill="${scD}"/>`); break;
+      default: push(`<path d="M${fx - 15},242 Q${fx - 15},228 ${fx - 2},228 Q${fx + 15},230 ${fx + 15},242Z" fill="${sc}"/><rect x="${fx - 16}" y="240" width="32" height="6" rx="3" fill="#fff"/><path d="M${fx - 6},232 L${fx + 4},232 M${fx - 7},236 L${fx + 5},236" stroke="#fff" stroke-width="2"/>`);
+    }
+  });
+
+  // --- bras ---
+  const longSleeve = a.top === 'capuche' || a.top === 'chemise';
+  push(`<rect x="46" y="128" width="17" height="56" rx="8" fill="${sk}"/><rect x="137" y="128" width="17" height="56" rx="8" fill="${sk}"/>`);
+  push(`<rect x="44" y="126" width="21" height="${longSleeve ? 54 : 28}" rx="9" fill="${a.top === 'chemise' ? tc : tc}"/><rect x="135" y="126" width="21" height="${longSleeve ? 54 : 28}" rx="9" fill="${tc}"/>`);
+  push(`<circle cx="54" cy="187" r="9" fill="${sk}"/><circle cx="146" cy="187" r="9" fill="${sk}"/>`);
+  // --- cou + buste ---
+  push(`<rect x="90" y="112" width="20" height="18" fill="${skD}"/>`);
+  if (a.top === 'robe') {
+    push(`<path d="M62,138 Q62,122 80,122 L120,122 Q138,122 138,138 L138,170 L156,218 Q100,228 44,218 L62,170Z" fill="${tc}"/><path d="M62,170 L138,170" stroke="${tcD}" stroke-width="4"/><circle cx="100" cy="170" r="5" fill="${shade(tc, .4)}"/>`);
+  } else {
+    push(`<rect x="60" y="122" width="80" height="72" rx="18" fill="${tc}"/>`);
+  }
+  switch (a.top) {
+    case 'raye': for (let y = 136; y <= 184; y += 12) push(`<rect x="60" y="${y}" width="80" height="5" fill="${tc === '#ffffff' ? '#3b4fe0' : '#ffffff'}" opacity=".9"/>`);
+      push(`<rect x="44" y="140" width="21" height="4" fill="#fff" opacity=".9"/><rect x="135" y="140" width="21" height="4" fill="#fff" opacity=".9"/>`); break;
+    case 'chemise': push(`<path d="M86,122 L100,138 L114,122 L120,126 L100,146 L80,126Z" fill="#fff"/>` + [150, 164, 178].map(y => `<circle cx="100" cy="${y}" r="2.6" fill="${tcD}"/>`).join('')); break;
+    case 'capuche': push(`<rect x="76" y="164" width="48" height="20" rx="8" fill="${tcD}"/><path d="M92,128 L90,150 M108,128 L110,150" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`); break;
+    case 'foot': push(`<path d="M88,122 L100,134 L112,122" stroke="#fff" stroke-width="5" fill="none"/><text x="100" y="172" text-anchor="middle" font-size="30" font-weight="900" fill="#fff" font-family="Arial, sans-serif">10</text><rect x="44" y="146" width="21" height="5" fill="#fff"/><rect x="135" y="146" width="21" height="5" fill="#fff"/>`); break;
+    case 'super': push(`<circle cx="100" cy="152" r="15" fill="#ffc83d" stroke="#fff" stroke-width="3"/><path d="${starPath(100, 152, 9)}" fill="${shade(tc, -.35)}"/><rect x="60" y="180" width="80" height="8" fill="#ffc83d"/>`); break;
+    case 'tshirt': push(`<path d="M88,122 Q100,132 112,122" stroke="${tcD}" stroke-width="4" fill="none"/>`); break;
+  }
+
+  // --- oreilles / cornes (derrière la tête) ---
+  switch (a.species) {
+    case 'chat': push(`<path d="M56,58 L60,14 L92,40Z M144,58 L140,14 L108,40Z" fill="${sk}"/><path d="M64,48 L66,26 L84,40Z M136,48 L134,26 L116,40Z" fill="#ff9fb4"/>`); break;
+    case 'lapin': push(`<ellipse cx="76" cy="20" rx="12" ry="34" fill="${sk}"/><ellipse cx="124" cy="20" rx="12" ry="34" fill="${sk}"/><ellipse cx="76" cy="22" rx="6" ry="24" fill="#ff9fb4"/><ellipse cx="124" cy="22" rx="6" ry="24" fill="#ff9fb4"/>`); break;
+    case 'ours': push(`<circle cx="62" cy="40" r="17" fill="${sk}"/><circle cx="138" cy="40" r="17" fill="${sk}"/><circle cx="62" cy="40" r="9" fill="${skD}"/><circle cx="138" cy="40" r="9" fill="${skD}"/>`); break;
+    case 'monstre': push(`<path d="M66,46 Q52,14 72,6 Q68,26 84,36Z M134,46 Q148,14 128,6 Q132,26 116,36Z" fill="#fff4d6" stroke="#e8d9a8" stroke-width="2"/>`); break;
+    case 'licorne': push(`<path d="M64,44 L66,20 L84,36Z M136,44 L134,20 L116,36Z" fill="${sk}"/>`); break;
+    case 'robot': push(`<line x1="100" y1="34" x2="100" y2="12" stroke="#8a93ab" stroke-width="4"/><circle cx="100" cy="10" r="7" fill="#ff5f6d"/><rect x="46" y="64" width="10" height="26" rx="4" fill="#8a93ab"/><rect x="144" y="64" width="10" height="26" rx="4" fill="#8a93ab"/>`); break;
+    default: push(`<circle cx="55" cy="80" r="10" fill="${sk}"/><circle cx="145" cy="80" r="10" fill="${sk}"/><circle cx="55" cy="80" r="5" fill="${skD}"/><circle cx="145" cy="80" r="5" fill="${skD}"/>`);
+  }
+  // --- tête ---
+  if (robot) push(`<rect x="56" y="32" width="88" height="86" rx="22" fill="${sk}"/><rect x="66" y="42" width="68" height="64" rx="16" fill="${shade(sk, .35)}"/>`);
+  else push(`<circle cx="100" cy="76" r="46" fill="${sk}"/>`);
+  if (a.species === 'monstre') push(`<circle cx="74" cy="50" r="5" fill="${skD}"/><circle cx="128" cy="56" r="4" fill="${skD}"/><circle cx="120" cy="40" r="3" fill="${skD}"/>`);
+  if (a.species === 'ours' || a.species === 'chat') push(`<ellipse cx="100" cy="96" rx="20" ry="14" fill="${shade(sk, .35)}"/>`);
+  // joues
+  push(`<circle cx="74" cy="94" r="7" fill="#ff7b9c" opacity=".3"/><circle cx="126" cy="94" r="7" fill="#ff7b9c" opacity=".3"/>`);
+
+  // --- yeux ---
+  const eye = (x, kind) => {
+    const y = 74;
+    switch (kind) {
+      case 'joyeux': return `<path d="M${x - 8},${y + 3} Q${x},${y - 8} ${x + 8},${y + 3}" stroke="${INK}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+      case 'endormis': return `<path d="M${x - 8},${y} Q${x},${y + 7} ${x + 8},${y}" stroke="${INK}" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M${x - 6},${y + 5} l-2,4 M${x},${y + 6} l0,4 M${x + 6},${y + 5} l2,4" stroke="${INK}" stroke-width="2"/>`;
+      case 'grands': return `<ellipse cx="${x}" cy="${y}" rx="10" ry="12" fill="#fff" stroke="${INK}" stroke-width="1.5"/><circle cx="${x + 1}" cy="${y + 2}" r="7" fill="#3a6ea5"/><circle cx="${x + 1}" cy="${y + 2}" r="3.5" fill="${INK}"/><circle cx="${x + 4}" cy="${y - 2}" r="2.5" fill="#fff"/>`;
+      case 'coeurs': return `<path d="${heartPath(x, y, 8)}" fill="#ff4d6d"/>`;
+      case 'etoiles': return `<path d="${starPath(x, y, 10)}" fill="#ffc83d" stroke="#e0a000" stroke-width="1.5"/>`;
+      default: return `<circle cx="${x}" cy="${y}" r="8" fill="#fff" stroke="${INK}" stroke-width="1.5"/><circle cx="${x + 1}" cy="${y + 1}" r="4.5" fill="${INK}"/><circle cx="${x + 3}" cy="${y - 1}" r="1.6" fill="#fff"/>`;
+    }
+  };
+  push(eye(82, a.eyes) + eye(118, a.eyes === 'clin' ? 'joyeux' : a.eyes));  // clin d'œil : œil gauche rond, droit fermé
+  // --- nez ---
+  switch (a.nose) {
+    case 'triangle': push(`<path d="M94,86 L106,86 L100,94Z" fill="#ff8fa3" stroke-linejoin="round"/>`); break;
+    case 'clown': push(`<circle cx="100" cy="90" r="8" fill="#ff3b3b"/><circle cx="97" cy="87" r="2.5" fill="#fff" opacity=".8"/>`); break;
+    case 'coeur': push(`<path d="${heartPath(100, 90, 5)}" fill="#ff6b8a"/>`); break;
+    case 'bouton': push(`<ellipse cx="100" cy="90" rx="7" ry="5" fill="${shade(sk, -.25)}"/><circle cx="97" cy="90" r="1.5" fill="${INK}"/><circle cx="103" cy="90" r="1.5" fill="${INK}"/>`); break;
+    default: push(`<ellipse cx="100" cy="90" rx="4" ry="3" fill="${shade(sk, -.35)}"/>`);
+  }
+  if (a.species === 'chat') push(`<path d="M80,94 L60,90 M80,98 L60,100 M120,94 L140,90 M120,98 L140,100" stroke="${INK}" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>`);
+  // --- bouche ---
+  switch (a.mouth) {
+    case 'rire': push(`<path d="M86,100 Q100,122 114,100Z" fill="#7a1f2b"/><ellipse cx="100" cy="110" rx="6" ry="3.5" fill="#ff7b8a"/>`); break;
+    case 'o': push(`<ellipse cx="100" cy="106" rx="5.5" ry="7" fill="#7a1f2b"/>`); break;
+    case 'langue': push(`<path d="M88,102 Q100,112 112,102" stroke="${INK}" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M95,106 Q95,118 100,118 Q105,118 105,106Z" fill="#ff7b8a"/>`); break;
+    case 'chat': push(`<path d="M88,102 Q94,110 100,102 Q106,110 112,102" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round"/>`); break;
+    case 'dents': push(`<path d="M84,100 Q100,120 116,100Z" fill="#fff" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/><path d="M86,103 L114,103 M95,103 L95,111 M105,103 L105,111" stroke="${INK}" stroke-width="1.5"/>`); break;
+    default: push(`<path d="M86,102 Q100,114 114,102" stroke="${INK}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`);
+  }
+  // --- cheveux devant ---
+  switch (a.hair) {
+    case 'court': push(`<path d="M54,74 Q54,28 100,28 Q146,28 146,74 Q140,52 120,48 Q100,58 78,50 Q62,56 54,74Z" fill="${hc}"/>`); break;
+    case 'pics': push(`<path d="M54,72 L56,40 L70,48 L74,22 L90,42 L100,16 L110,42 L126,22 L130,48 L144,40 L146,72 Q130,50 100,50 Q70,50 54,72Z" fill="${hc}"/>`); break;
+    case 'long': case 'couettes': push(`<path d="M54,74 Q56,28 100,28 Q144,28 146,74 Q128,46 100,50 Q72,46 54,74Z" fill="${hc}"/>`); break;
+    case 'afro': push([60, 76, 92, 108, 124, 140].map((x, i) => `<circle cx="${x}" cy="${i === 0 || i === 5 ? 54 : 38}" r="14" fill="${hc}"/>`).join('')); break;
+    case 'chignon': push(`<circle cx="100" cy="24" r="15" fill="${hc}"/><path d="M54,74 Q54,28 100,28 Q146,28 146,74 Q130,46 100,46 Q70,46 54,74Z" fill="${hc}"/>`); break;
+    case 'meche': push(`<path d="M54,78 Q52,28 104,28 Q148,30 146,70 Q120,40 72,62 Q60,68 54,78Z" fill="${hc}"/>`); break;
+  }
+  if (a.species === 'licorne') push(`<path d="M92,34 L100,0 L108,34Z" fill="#ffd166" stroke="#e0a000" stroke-width="1.5"/><path d="M95,22 L105,18 M94,28 L106,24" stroke="#e0a000" stroke-width="1.5"/>`);
+  // --- lunettes ---
+  switch (a.glasses) {
+    case 'rondes': push(`<circle cx="82" cy="74" r="13" fill="#fff" fill-opacity=".15" stroke="${INK}" stroke-width="3"/><circle cx="118" cy="74" r="13" fill="#fff" fill-opacity=".15" stroke="${INK}" stroke-width="3"/><path d="M95,74 L105,74" stroke="${INK}" stroke-width="3"/>`); break;
+    case 'soleil': push(`<rect x="66" y="64" width="31" height="20" rx="8" fill="${INK}"/><rect x="103" y="64" width="31" height="20" rx="8" fill="${INK}"/><path d="M97,70 L103,70" stroke="${INK}" stroke-width="3"/><path d="M70,68 L78,68" stroke="#fff" stroke-width="2" opacity=".6"/>`); break;
+    case 'coeur': push(`<path d="${heartPath(82, 74, 12)}" fill="#ff4d6d" opacity=".9"/><path d="${heartPath(118, 74, 12)}" fill="#ff4d6d" opacity=".9"/><path d="M96,70 L104,70" stroke="#ff4d6d" stroke-width="3"/>`); break;
+    case 'masque': push(`<path fill-rule="evenodd" d="M62,64 Q100,58 138,64 Q142,76 136,86 Q100,82 64,86 Q58,76 62,64Z M74,74 a8,6 0 1,0 16,0 a8,6 0 1,0 -16,0Z M110,74 a8,6 0 1,0 16,0 a8,6 0 1,0 -16,0Z" fill="${INK}"/><path d="M62,70 L46,64 M62,76 L48,80" stroke="${INK}" stroke-width="4" stroke-linecap="round"/>`); break;
+  }
+  // --- chapeaux ---
+  switch (a.hat) {
+    case 'casquette': push(`<path d="M54,60 Q56,22 100,22 Q144,22 146,60Z" fill="#ff6b4a"/><path d="M118,58 Q168,52 172,62 Q144,68 116,64Z" fill="#d94a2b"/><circle cx="100" cy="24" r="4" fill="#d94a2b"/>`); break;
+    case 'couronne': push(`<path d="M64,42 L64,12 L80,28 L100,4 L120,28 L136,12 L136,42Z" fill="#ffc83d" stroke="#e0a000" stroke-width="2" stroke-linejoin="round"/><circle cx="100" cy="32" r="5" fill="#ff4d6d"/><circle cx="78" cy="35" r="3.5" fill="#3b9cff"/><circle cx="122" cy="35" r="3.5" fill="#1fb57a"/>`); break;
+    case 'magicien': push(`<path d="M60,42 L104,-4 L140,42Z" fill="#6a4bd8"/><ellipse cx="100" cy="42" rx="52" ry="9" fill="#5236b8"/><path d="${starPath(100, 22, 7)}" fill="#ffd166"/><path d="${starPath(84, 34, 4)}" fill="#ffd166"/>`); break;
+    case 'bonnet': push(`<path d="M54,60 Q54,16 100,16 Q146,16 146,60Z" fill="#3b9cff"/><rect x="50" y="50" width="100" height="14" rx="7" fill="#fff"/><circle cx="100" cy="12" r="11" fill="#fff"/>`); break;
+    case 'cowboy': push(`<path d="M68,42 Q64,12 84,14 Q100,22 116,14 Q136,12 132,42Z" fill="#a0673a"/><ellipse cx="100" cy="42" rx="64" ry="10" fill="#8a5530"/><rect x="68" y="34" width="64" height="6" fill="#5e3a22"/>`); break;
+    case 'casque': push(`<path d="M54,78 Q54,20 100,20 Q146,20 146,78" stroke="#2b2f4f" stroke-width="8" fill="none"/><rect x="42" y="64" width="18" height="30" rx="8" fill="#ff5fa8"/><rect x="140" y="64" width="18" height="30" rx="8" fill="#ff5fa8"/>`); break;
+    case 'fleur': push([0, 72, 144, 216, 288].map(d => `<circle cx="${134 + 9 * Math.cos(d * Math.PI / 180)}" cy="${38 + 9 * Math.sin(d * Math.PI / 180)}" r="7" fill="#ff8fb3"/>`).join('') + `<circle cx="134" cy="38" r="5" fill="#ffc83d"/>`); break;
+    case 'noeud': push(`<path d="M130,36 L112,24 L112,48Z M130,36 L148,24 L148,48Z" fill="#ff4d6d"/><circle cx="130" cy="36" r="6" fill="#e0304f"/>`); break;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VIEWS[view] || VIEWS.full}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${out.join('')}</svg>`;
+}
+
+/* --- étoiles, niveaux --- */
+const STARS_PER_LEVEL = 20;
+function levelInfo() {
+  const t = state.total || 0;
+  return { level: 1 + Math.floor(t / STARS_PER_LEVEL), inLevel: t % STARS_PER_LEVEL };
+}
+function earn(n) {
+  const before = levelInfo().level;
+  state.stars += n; state.total = (state.total || 0) + n;
+  save(); updateHeader();
+  return levelInfo().level > before;
+}
+const owns = (cat, it) => it.price === 0 || state.owned.includes(cat.key + ':' + it.id);
+
+/* --- écran Mon héros --- */
+let heroCat = 'species', tryOn = null;
+function openHero() {
+  if (hasTTS) speechSynthesis.cancel();
+  clearTimers(); typing = null; game = null; tryOn = null;
+  renderHero(); show('s-hero');
+}
+function renderHero() {
+  const cat = CATALOG.find(c => c.key === heroCat);
+  const look = tryOn ? thumbLook(cat, tryOn) : state.avatar;
+  if (tryOn && cat.key === 'species') { look.hair = state.avatar.hair; look.hat = state.avatar.hat; look.glasses = state.avatar.glasses; }
+  $('#heroStage').innerHTML = avatarSVG(look, 'full');
+  $('#heroName').value = state.avatar.name || '';
+  const owned = CATALOG.reduce((n, c) => n + c.items.filter(i => owns(c, i)).length, 0);
+  const all = CATALOG.reduce((n, c) => n + c.items.length, 0);
+  $('#heroInfo').textContent = `⭐ ${state.stars} étoile${state.stars > 1 ? 's' : ''} à dépenser · ${owned}/${all} objets`;
+  $('#heroCats').innerHTML = CATALOG.map(c => `<button class="cat ${c.key === heroCat ? 'on' : ''}" data-cat="${c.key}"><span>${c.icon}</span>${c.label}</button>`).join('');
+  $('#catTitle').textContent = cat.label;
+  const sw = $('#heroSwatches');
+  sw.hidden = !cat.colorKey;
+  sw.innerHTML = cat.colorKey ? cat.palette.map(col => `<button class="sw ${state.avatar[cat.colorKey] === col ? 'on' : ''}" data-col="${col}" style="background:${col}" aria-label="Couleur"></button>`).join('') : '';
+  $('#heroItems').innerHTML = cat.items.map(it => {
+    const own = owns(cat, it), on = state.avatar[cat.key] === it.id, tr = tryOn && tryOn.id === it.id;
+    const tag = on ? '<span class="tag own">✔</span>' : own ? '' : `<span class="tag">${it.price} ⭐</span>`;
+    return `<button class="item ${on ? 'on' : ''} ${tr ? 'try' : ''} ${own ? '' : 'locked'}" data-it="${it.id}">
+      <span class="thumb">${avatarSVG(thumbLook(cat, it), cat.view)}</span>
+      <span class="nm">${esc(it.name)}</span>${tag}</button>`;
+  }).join('');
+  const bar = $('#buyBar');
+  if (tryOn) {
+    const missing = tryOn.price - state.stars;
+    bar.hidden = false;
+    bar.innerHTML = `<div class="bthumb">${avatarSVG(look, 'full')}</div><div class="bbody">
+      <p>${esc(tryOn.name)} : ${tryOn.price} ⭐</p>
+      ${missing > 0 ? `<p class="muted" style="font-size:.95rem">Il te manque ${missing} étoile${missing > 1 ? 's' : ''}. Joue pour en gagner !</p>` : ''}
+      <div class="row"><button class="btn green" id="buyOk" ${missing > 0 ? 'disabled' : ''}>Acheter</button><button class="btn alt" id="buyNo">Annuler</button></div></div>`;
+    $('#buyOk').onclick = buyTryOn;
+    $('#buyNo').onclick = () => { tryOn = null; renderHero(); };
+  } else { bar.hidden = true; bar.innerHTML = ''; }
+
+  document.querySelectorAll('#heroCats .cat').forEach(b => b.onclick = () => { heroCat = b.dataset.cat; tryOn = null; renderHero(); });
+  sw.querySelectorAll('.sw').forEach(b => b.onclick = () => { state.avatar[cat.colorKey] = b.dataset.col; save(); renderHero(); });
+  document.querySelectorAll('#heroItems .item').forEach(b => b.onclick = () => {
+    const it = cat.items.find(x => x.id === b.dataset.it);
+    if (owns(cat, it)) { equip(cat, it); tryOn = null; save(); renderHero(); }
+    else { tryOn = it; renderHero(); say(`${it.name}. ${it.price} étoiles.`); }
+  });
+}
+function thumbLook(cat, it) {
+  const look = Object.assign({}, state.avatar, { [cat.key]: it.id });
+  if (cat.key === 'species') Object.assign(look, { hair: 'aucun', hat: 'aucun', glasses: 'aucun', skin: it.id === state.avatar.species ? state.avatar.skin : SPECIES_COLOR[it.id] });
+  return look;
+}
+function equip(cat, it) {
+  if (cat.key === 'species' && state.avatar.species !== it.id) state.avatar.skin = SPECIES_COLOR[it.id];
+  state.avatar[cat.key] = it.id;
+}
+function buyTryOn() {
+  const cat = CATALOG.find(c => c.key === heroCat), it = tryOn;
+  if (!it || state.stars < it.price) return;
+  state.stars -= it.price;
+  state.owned.push(cat.key + ':' + it.id);
+  equip(cat, it);
+  tryOn = null;
+  save(); updateHeader(); beep(true); confetti();
+  say(`Super ! Tu as gagné : ${it.name} !`);
+  renderHero();
+}
+$('#heroName').addEventListener('input', ev => { state.avatar.name = ev.target.value.trim().slice(0, 14); save(); });
 
 /* =====================================================================
    8. Démarrage
    ===================================================================== */
+state.avatar = Object.assign({}, DEFAULT_AVATAR, state.avatar || {});
+if (!Array.isArray(state.owned)) state.owned = [];
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  if (t.dataset.nav === 'hero') openHero();
+  else if (t.dataset.nav === 'parents') openGate();
+  else goHome();
+});
 if (hasTTS) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
 renderHome();
 // pour les tests automatiques
-window.__mots = { parseEntry, parseList, variants };
+window.__mots = { parseEntry, parseList, variants, avatarSVG, CATALOG };
 })();
 </script>
 </body>
