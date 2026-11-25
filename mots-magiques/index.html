@@ -581,6 +581,7 @@
   <section class="screen" id="s-profiles">
     <h2 class="who-title">Qui joue aujourd'hui ?</h2>
     <div class="profiles" id="profileGrid"></div>
+    <p class="muted center cloudline" style="margin:0;font-weight:700"></p>
   </section>
   <section class="screen" id="s-newprofile">
     <div class="card newprof">
@@ -674,6 +675,14 @@
     </div>
 
     <div class="card">
+      <h2>☁️ Sauvegarde</h2>
+      <p class="cloudline" style="font-weight:700"></p>
+      <p class="muted" style="margin:0">Les profils, les étoiles, les héros, les progrès et les listes de mots sont enregistrés
+        sur votre compte claude.ai : ouvrez le jeu avec ce même compte sur l'ordinateur ou le téléphone pour tout retrouver.
+        La voix et le son restent réglés appareil par appareil.</p>
+    </div>
+
+    <div class="card">
       <h2>🔊 Voix</h2>
       <label for="pVoice">Voix utilisée</label>
       <select id="pVoice"></select>
@@ -747,7 +756,106 @@ function load() {
 }
 let state = load();
 let prof = null;   // l'enfant qui joue
-function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }
+function saveLocal() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }
+// Chaque changement est daté, gardé sur l'appareil, puis envoyé à la sauvegarde en ligne.
+function save() { state.savedAt = Date.now(); saveLocal(); schedulePush(); }
+
+/* ---------- Sauvegarde en ligne (compte claude.ai) ----------
+   Une seule fiche privée par compte : data/users/<id>/save. Partagé entre appareils :
+   les listes et les profils. Propre à chaque appareil : voix, vitesse, son, enfant actif. */
+let cloud = null, pushTimer = null, pushing = false, pushAgain = false, cloudState = 'local';
+const shared = () => ({ lists: state.lists, profiles: state.profiles });
+function setCloud(st) {
+  cloudState = st;
+  const txt = {
+    local: '📱 Progrès enregistrés sur cet appareil seulement.',
+    wait: '☁️ Connexion à la sauvegarde en ligne…',
+    slow: '☁️ La sauvegarde en ligne ne répond pas encore. Les progrès restent enregistrés sur cet appareil.',
+    ok: '☁️ Progrès enregistrés sur votre compte : retrouvez-les sur l\'ordinateur et le téléphone.',
+    err: '⚠️ La sauvegarde en ligne ne répond pas. Les progrès restent enregistrés sur cet appareil.',
+    full: '⚠️ La sauvegarde en ligne est pleine. Les progrès restent enregistrés sur cet appareil.'
+  }[st];
+  document.querySelectorAll('.cloudline').forEach(el => { el.textContent = txt; });
+}
+function schedulePush() {
+  if (!cloud) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(push, 1200);
+}
+async function push() {
+  if (!cloud) return;
+  clearTimeout(pushTimer);
+  if (pushing) { pushAgain = true; return; }   // une seule écriture à la fois
+  pushing = true;
+  try {
+    await cloud.set({ json: JSON.stringify(shared()), savedAt: state.savedAt || Date.now() });
+    setCloud('ok');
+  } catch (e) {
+    setCloud(e && e.code === 'quota_exceeded' ? 'full' : 'err');
+  }
+  pushing = false;
+  if (pushAgain) { pushAgain = false; push(); }
+}
+// en quittant l'appli (téléphone surtout), on envoie tout de suite
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && pushTimer) push(); });
+
+function applyRemote(data, savedAt) {
+  state.lists = data.lists && data.lists.length ? data.lists : state.lists;
+  state.profiles = Array.isArray(data.profiles) ? data.profiles : [];
+  state.savedAt = savedAt;
+  normalizeState();
+  saveLocal();
+  refreshAfterSync();
+}
+// Premier contact avec la sauvegarde en ligne sur cet appareil.
+function firstSync(remote) {
+  let r = null;
+  try { r = remote && remote.json ? JSON.parse(remote.json) : null; } catch (e) { r = null; }
+  if (!r) { state.synced = true; save(); push(); setCloud('ok'); return; }
+  if (!state.synced && state.profiles.length) {
+    // cet appareil a ses propres progrès, jamais envoyés : on fusionne les deux
+    const lists = r.lists || [];
+    state.lists.forEach(l => { if (!lists.some(x => x.id === l.id)) lists.push(l); });
+    const profiles = r.profiles || [];
+    state.profiles.forEach(k => {
+      const i = profiles.findIndex(x => x.id === k.id);
+      if (i < 0) profiles.push(k);
+      else if ((k.total || 0) > (profiles[i].total || 0)) profiles[i] = k;
+    });
+    state.synced = true;
+    applyRemote({ lists, profiles }, Date.now());
+    save(); push();
+  } else if ((remote.savedAt || 0) > (state.savedAt || 0) || !state.synced) {
+    state.synced = true;
+    applyRemote(r, remote.savedAt || 0);
+  } else {
+    state.synced = true; saveLocal(); push();
+  }
+  setCloud('ok');
+}
+async function initCloud() {
+  if (!window.claude || typeof window.claude.use !== 'function') return setCloud('local');
+  setCloud('wait');
+  try {
+    const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    const uid = user ? await user.id() : null;
+    if (!db || !uid) return setCloud('local');
+    const ref = db.doc('data/users/' + uid + '/save');
+    let first = true;
+    const slow = setTimeout(() => { if (first) setCloud('slow'); }, 10000);
+    ref.onSnapshot(snap => {
+      if (first && snap.metadata.fromCache) return;      // on attend la vraie réponse
+      if (snap.metadata.hasPendingWrites) return;        // nos propres envois
+      clearTimeout(slow);
+      const remote = snap.exists ? snap.data() : null;
+      if (first) { first = false; cloud = ref; firstSync(remote); return; }
+      // changement fait sur un autre appareil
+      if (remote && (remote.savedAt || 0) > (state.savedAt || 0)) {
+        try { applyRemote(JSON.parse(remote.json), remote.savedAt); } catch (e) {}
+      }
+    }, () => { clearTimeout(slow); setCloud('err'); });
+  } catch (e) { setCloud('local'); }
+}
 
 /* =====================================================================
    2. Analyse des mots : lettres muettes, doublées, accents
@@ -2264,13 +2372,32 @@ $('#heroName').addEventListener('input', ev => { prof.name = ev.target.value.tri
 /* =====================================================================
    8. Démarrage
    ===================================================================== */
-state.profiles.forEach(k => {
-  k.avatar = Object.assign({}, DEFAULT_AVATAR, k.avatar || {});
-  if (!Array.isArray(k.owned)) k.owned = [];
-  if (!k.path) k.path = {};
-  if (!k.mastery) k.mastery = {};
-  if (!state.lists.some(l => l.id === k.current)) k.current = state.lists[0].id;
-});
+function normalizeState() {
+  if (!Array.isArray(state.lists) || !state.lists.length) state.lists = JSON.parse(JSON.stringify(DEFAULT_LISTS));
+  if (!Array.isArray(state.profiles)) state.profiles = [];
+  state.profiles.forEach(k => {
+    k.avatar = Object.assign({}, DEFAULT_AVATAR, k.avatar || {});
+    if (!Array.isArray(k.owned)) k.owned = [];
+    if (!k.path) k.path = {};
+    if (!k.mastery) k.mastery = {};
+    if (!state.lists.some(l => l.id === k.current)) k.current = state.lists[0].id;
+  });
+  // l'enfant en train de jouer garde sa place si son profil existe toujours
+  prof = prof ? (state.profiles.find(k => k.id === prof.id) || null) : null;
+}
+normalizeState();
+
+// Après une mise à jour venue d'un autre appareil : on redessine l'écran affiché (sauf en pleine partie).
+function refreshAfterSync() {
+  const cur = (document.querySelector('.screen.active') || {}).id;
+  updateHeader();
+  if (!prof && !['s-profiles', 's-newprofile'].includes(cur)) return openProfiles();
+  if (cur === 's-profiles') openProfiles();
+  else if (cur === 's-newprofile') { if (state.profiles.length && !$('#npName').value.trim()) openProfiles(); }
+  else if (cur === 's-home') renderHome();
+  else if (cur === 's-hero') renderHero();
+  else if (cur === 's-parents') { if (document.activeElement !== $('#pText') && document.activeElement !== $('#pName')) renderParents(); else renderStats(); }
+}
 
 const STARTERS = [
   { name: 'Garçon', av: { species: 'humain', hair: 'court', top: 'tshirt', topColor: '#3b9cff', bottom: 'pantalon', bottomColor: '#1d2242', shoesColor: '#ff6b4a' }, owned: [] },
@@ -2329,6 +2456,7 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
 });
 if (hasTTS) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
 openProfiles();
+initCloud();
 // pour les tests automatiques
 window.__mots = { parseEntry, parseList, variants, avatarSVG, CATALOG, findGroups };
 })();
