@@ -10,7 +10,7 @@
 <title>Les Mots Magiques</title>
 <style>
   /* Mise en page : une colonne centrée, cartes blanches sur fond ciel pointillé,
-     barre d'onglets en bas comme une appli. Couleurs vives par jeu, pièges en rouge/bleu/orange. */
+     barre d'onglets en bas comme une appli. Couleurs vives par jeu, pièges en gris (muettes) / bleu / orange, rouge réservé aux erreurs. */
   :root {
     color-scheme: light;
     --bg: #eaf1fb;
@@ -32,7 +32,8 @@
     --ko-d: #c22f2f;
     --ko-soft: #fde7e7;
     /* couleurs des pièges (gardées d'une version à l'autre : l'enfant les connaît) */
-    --silent: #e63946;
+    --silent: #7c859e;
+    --silent-soft: #eceff5;
     --double: #1d7fd6;
     --double-soft: #dcecff;
     --accent: #f08c00;
@@ -261,10 +262,11 @@
     font-size: 2.6rem; font-weight: 800; padding: 0 6px; box-shadow: 0 4px 0 var(--line);
   }
   .hl.fixed { border: none; background: none; min-width: 1rem; cursor: default; box-shadow: none; }
-  .hl.f-silent { border-color: var(--silent); color: var(--silent); background: var(--ko-soft); }
+  .hl.f-silent { border-color: var(--silent); border-style: dashed; color: var(--silent); background: var(--silent-soft); position: relative; }
+  .hl.f-silent::after { content: "🤫"; position: absolute; top: -12px; right: -8px; font-size: 1.1rem; }
   .hl.f-double { border-color: var(--double); color: var(--double); background: var(--double-soft); }
   .hl.f-accent { border-color: var(--accent); color: var(--accent); background: #fff1dc; }
-  .hl.nope { background: var(--surface-2); color: #a9b0c6; }
+  .hl.nope { border-color: var(--line); }
 
   .shake { animation: shake .4s; }
   @keyframes shake { 20%,60% { transform: translateX(-7px); } 40%,80% { transform: translateX(7px); } }
@@ -1698,7 +1700,7 @@ function hintTraps() {
     else if (c.accent) s.classList.add('h-accent');
   });
   const msgs = [];
-  if (e.traps.some(t => t.type === 'silent')) msgs.push('une lettre muette 🤫 (case rouge)');
+  if (e.traps.some(t => t.type === 'silent')) msgs.push('une lettre muette 🤫 (case grise)');
   if (e.traps.some(t => t.type === 'double')) msgs.push('une lettre doublée 👯 (cases bleues)');
   if (e.traps.some(t => t.type === 'accent')) msgs.push('un accent 🎩 (case orange)');
   const fb = $('#tFb');
