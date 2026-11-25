@@ -405,6 +405,25 @@
   .sonchip { display: inline-flex; align-items: center; gap: 8px; background: var(--son-soft); border: 1px solid #d9ccff; border-radius: 14px; padding: 8px 12px; font-size: 1.05rem; font-weight: 700; }
   .sonchip b { font-size: 1.35rem; color: var(--son); }
 
+  /* ---------- Révisions ---------- */
+  .revbtns { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+  .revbtn {
+    background: var(--surface-2); border: 2px solid var(--line); border-radius: 18px; padding: 12px 14px; text-align: left;
+    display: flex; gap: 12px; align-items: center; font-weight: 800; font-size: 1.05rem;
+  }
+  .revbtn:active { transform: scale(.98); }
+  .revbtn .ri { font-size: 1.8rem; }
+  .revbtn small { display: block; font-weight: 700; color: var(--ink-soft); font-size: .85rem; }
+  .revkind { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 800; }
+  .revkind select { padding: 9px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); font-weight: 700; font-size: 1rem; }
+  .kidpick { display: flex; flex-direction: column; gap: 8px; text-align: left; }
+  .kp { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; border: 2px solid var(--line); font-weight: 800; cursor: pointer; }
+  .kp input { width: 22px; height: 22px; accent-color: var(--primary); }
+  .kp .face { width: 40px; height: 40px; border-radius: 12px; overflow: hidden; flex: none; }
+  .kp .face svg { width: 100%; height: 100%; display: block; }
+  .missed { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .missed .chip { font-size: 1rem; padding: 6px 12px; }
+
   /* ---------- Fenêtre / confettis ---------- */
   .modal { position: fixed; inset: 0; background: rgba(29,34,66,.45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
   .modal .card { max-width: 420px; width: 100%; text-align: center; font-size: 1.2rem; display: flex; flex-direction: column; gap: 14px; }
@@ -499,6 +518,23 @@
       <p class="muted" style="margin:12px 0 0">Touche un mot pour l'entendre. ⭐⭐⭐ = mot bien connu !</p>
     </div>
 
+    <div class="card" id="revCard" style="display:flex;flex-direction:column;gap:12px">
+      <div class="listhead" style="margin:0"><h2>🎲 Révisions</h2><span class="muted" id="revTotal" style="font-weight:800"></span></div>
+      <p class="muted" style="margin:0">Tous les mots de toutes les listes, tirés au hasard.</p>
+      <div class="revkind"><label for="revKind">Jeu :</label>
+        <select id="revKind">
+          <option value="mix">🎲 Un jeu différent à chaque mot</option>
+          <option value="quiz">✅ Le bon mot</option>
+          <option value="scramble">🔀 Lettres mélangées</option>
+          <option value="dictee">🎧 Dictée</option>
+        </select></div>
+      <div class="revbtns">
+        <button class="revbtn" data-rev="surprise"><span class="ri">🎯</span><span>Test surprise<small>10 mots au hasard</small></span></button>
+        <button class="revbtn" data-rev="all"><span class="ri">📚</span><span>Grand test<small id="revAllInfo">Tous les mots</small></span></button>
+        <button class="revbtn" data-rev="review"><span class="ri">🔁</span><span>Mots à revoir<small id="revReviewInfo">Ceux qui n'ont pas ⭐⭐⭐</small></span></button>
+      </div>
+    </div>
+
     <p class="eyebrow" style="margin:6px 4px -6px">Jeux libres, du plus facile au plus difficile</p>
     <div class="games">
       <button class="game-btn gb3" data-game="learn"><span class="ico">👀</span><span class="lv">Niveau 1</span><b>Découvrir</b><small>J'écoute et je regarde les pièges</small></button>
@@ -529,6 +565,7 @@
       <h2 id="endTitle" style="font-size:1.7rem">Bravo !</h2>
       <div class="gain" id="endGain">+0 ⭐</div>
       <p id="endText" style="font-size:1.15rem;margin:0"></p>
+      <div id="endMissed" hidden style="display:flex;flex-direction:column;gap:8px"><b>À retravailler :</b><div class="missed" id="endMissedList"></div></div>
       <div class="row">
         <button class="btn big green" id="nextStepBtn" hidden>Étape suivante ➜</button>
         <button class="btn big green" id="againBtn">🔁 Rejouer</button>
@@ -620,7 +657,8 @@
         • Le jeu repère seul les lettres doublées, les accents et la plupart des lettres muettes.
           S'il se trompe, indiquez vous-même les lettres muettes entre crochets :
           <code>fusi[l]</code>, <code>ils joue[nt]</code>. Des crochets vides <code>ours[]</code> veulent dire « aucune lettre muette ».<br>
-        • Une ligne commençant par <code>#</code> est ignorée.
+        • Une ligne commençant par <code>#</code> est ignorée.<br>
+        • Au premier enregistrement d'une nouvelle liste, le jeu demande pour quels enfants elle est (pratique si deux enfants sont dans la même classe).
       </div>
 
       <label>Aperçu des pièges détectés</label>
@@ -1087,6 +1125,7 @@ function renderHome() {
   $('#lvlBar').style.width = Math.round(lv.inLevel / STARS_PER_LEVEL * 100) + '%';
   $('#lvlNext').textContent = `${lv.inLevel}/${STARS_PER_LEVEL} ⭐`;
   renderPath();
+  renderRevCard();
 }
 $('#listSelect').onchange = ev => { prof.current = ev.target.value; save(); renderHome(); };
 $('#homeTitle').onclick = goHome;
@@ -1145,7 +1184,7 @@ function startGame(type, path) {
   nextWord(0);
 }
 $('#quitBtn').onclick = goHome;
-$('#againBtn').onclick = () => game && startGame(game.type, game.path);
+$('#againBtn').onclick = () => game && (game.rev ? startRevision(game.rev) : startGame(game.type, game.path));
 $('#endHome').onclick = goHome;
 $('#endShop').onclick = () => openHero();
 
@@ -1155,6 +1194,37 @@ function renderProgress() {
     return `<i class="${r === true ? 'done' : r === false ? 'miss' : ''} ${i === game.i ? 'cur' : ''}"></i>`;
   }).join('');
 }
+// tous les mots de toutes les listes, sans doublon
+function allEntries() {
+  const seen = new Map();
+  state.lists.forEach(l => parseList(l.text).forEach(e => { if (!seen.has(e.key)) seen.set(e.key, e); }));
+  return [...seen.values()];
+}
+const REV_KINDS = ['quiz', 'scramble', 'dictee', 'photo'];
+function startRevision(opt) {
+  let pool = allEntries();
+  if (opt.mode === 'review') pool = pool.filter(e => mastery(e) < 3);
+  if (!pool.length) {
+    popup(opt.mode === 'review' ? 'Bravo ! Aucun mot à revoir : tous tes mots ont ⭐⭐⭐.' : 'Il n\'y a encore aucun mot dans les listes.');
+    return;
+  }
+  // mots à revoir : les moins bien connus d'abord ; sinon complètement au hasard
+  let words = opt.mode === 'review' ? shuffle(pool).sort((a, b) => mastery(a) - mastery(b)) : shuffle(pool);
+  if (opt.mode === 'surprise') words = words.slice(0, 10);
+  if (opt.mode === 'review') words = shuffle(words.slice(0, 12));
+  const kinds = words.map(e => opt.kind !== 'mix' ? opt.kind : pick(e.traps.length ? REV_KINDS.concat('hunt') : REV_KINDS));
+  game = { type: 'rev', words, kinds, i: 0, results: [], earned: 0, path: false, rev: opt };
+  show('s-game');
+  nextWord(0);
+}
+document.querySelectorAll('[data-rev]').forEach(b => b.onclick = () => startRevision({ mode: b.dataset.rev, kind: $('#revKind').value }));
+function renderRevCard() {
+  const all = allEntries(), review = all.filter(e => mastery(e) < 3).length;
+  $('#revTotal').textContent = `${all.length} mot${all.length > 1 ? 's' : ''}`;
+  $('#revAllInfo').textContent = `Les ${all.length} mots`;
+  $('#revReviewInfo').textContent = review ? `${review} mot${review > 1 ? 's' : ''} sans ⭐⭐⭐` : 'Aucun : bravo !';
+}
+
 function nextWord(i) {
   clearTimers();
   if (i >= game.words.length) return endGame();
@@ -1163,8 +1233,10 @@ function nextWord(i) {
   game.penalty = false;   // une erreur => pas d'étoile
   game.hint = false;      // un indice => étoile, mais le mot n'avance pas en maîtrise
   renderProgress();
+  const kind = game.kinds ? game.kinds[i] : game.type;
+  if (game.rev) $('#gTitle').textContent = `🎲 ${{ surprise: 'Test surprise', all: 'Grand test', review: 'Révisions' }[game.rev.mode]} · ${GAMES[kind].title.replace(/^\S+ /, '')}`;
   ({ learn: renderLearn, hunt: renderHunt, quiz: renderQuiz, scramble: renderScramble,
-     photo: renderPhoto, dictee: renderDictee })[game.type]();
+     photo: renderPhoto, dictee: renderDictee })[kind]();
 }
 function finishWord(area) {
   const e = game.e;
@@ -1268,6 +1340,11 @@ function endGame() {
   $('#endTitle').textContent = title;
   $('#endGain').textContent = `+${gain} ⭐`;
   $('#endText').textContent = lines.join(' ');
+  // mots ratés (pour les tests et révisions surtout)
+  const missed = learn ? [] : game.words.filter((e, i) => game.results[i] === false).filter((e, i, a) => a.indexOf(e) === i);
+  $('#endMissed').hidden = !missed.length;
+  $('#endMissedList').innerHTML = missed.map((e, i) => `<button class="chip" data-mi="${i}">${e.emoji ? esc(e.emoji) + ' ' : ''}${esc(e.word)}</button>`).join('');
+  $('#endMissedList').querySelectorAll('[data-mi]').forEach(b => b.onclick = () => say(missed[+b.dataset.mi].word));
   if (gain) confetti();
   say(speech);
   show('s-end');
@@ -1776,16 +1853,48 @@ $('#pSave').onclick = () => {
   const l = state.lists.find(x => x.id === editId);
   l.name = $('#pName').value.trim() || 'Ma liste';
   l.text = $('#pText').value;
+  const first = l.fresh;
+  delete l.fresh;
   save();
   renderParents();
-  $('#pSaved').textContent = '✅ Enregistré ! Choisissez plus bas quelle liste utilise chaque enfant.';
+  $('#pSaved').textContent = '✅ Enregistré !';
+  // premier enregistrement d'une nouvelle liste : pour quels enfants ?
+  if (first && parseList(l.text).length) askKidsForList(l);
 };
+function askKidsForList(l) {
+  if (state.profiles.length < 2) {
+    state.profiles.forEach(k => { k.current = l.id; });
+    save(); renderStats();
+    $('#pSaved').textContent = `✅ Enregistré ! ${prof.name} utilise maintenant cette liste.`;
+    return;
+  }
+  const m = document.createElement('div');
+  m.className = 'modal';
+  m.innerHTML = `<div class="card">
+    <p><b>Nouvelle liste « ${esc(l.name)} »</b></p>
+    <p style="font-size:1.05rem">Pour quels enfants ? Cochez tous ceux qui sont dans la même classe.</p>
+    <div class="kidpick">${state.profiles.map((k, i) => `<label class="kp"><input type="checkbox" data-k="${i}" ${k === prof ? 'checked' : ''}>
+      <span class="face">${avatarSVG(k.avatar, 'face')}</span>${esc(k.name)}</label>`).join('')}</div>
+    <div class="row"><button class="btn green" data-ok>Valider</button><button class="btn alt" data-no>Plus tard</button></div></div>`;
+  document.body.appendChild(m);
+  m.querySelector('[data-ok]').onclick = () => {
+    const chosen = [...m.querySelectorAll('input:checked')].map(x => state.profiles[+x.dataset.k]);
+    chosen.forEach(k => { k.current = l.id; });
+    m.remove(); save(); renderStats();
+    $('#pSaved').textContent = chosen.length
+      ? `✅ Enregistré ! Liste utilisée par : ${chosen.map(k => k.name).join(', ')}.`
+      : '✅ Enregistré ! Aucun enfant ne l\'utilise encore (voir « Les enfants » plus bas).';
+  };
+  m.querySelector('[data-no]').onclick = () => { m.remove(); $('#pSaved').textContent = '✅ Enregistré ! Choisissez plus bas quel enfant utilise cette liste.'; };
+}
 $('#pNew').onclick = () => {
   const id = 'l' + Date.now();
   const d = new Date();
-  state.lists.push({ id, name: `Mots du ${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`, text: '' });
-  editId = id; prof.current = id;
+  state.lists.push({ id, name: `Mots du ${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`, text: '', fresh: true });
+  editId = id;
+  $('#pSaved').textContent = '';
   save(); renderParents();
+  $('#pSaved').textContent = 'Écrivez les mots puis touchez « Enregistrer ».';
   $('#pText').focus();
 };
 $('#pDel').onclick = () => {
