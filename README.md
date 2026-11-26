@@ -2,10 +2,6 @@
 
 ## Les Mots Magiques 🦉
 
-Jeu pour apprendre les mots de vocabulaire du CE1 : `mots-magiques/index.html`
-(fichier autonome, à ouvrir dans un navigateur). Les listes de mots se modifient
-dans l'espace parents (onglet 🔒 Parents).
-
-En ligne : https://sanpero45.github.io/cyber-academy/mots-magiques/
-(installable sur l'écran d'accueil, utilisable sans internet ; les progrès sont
-enregistrés sur l'appareil).
+Le jeu a son propre dépôt : https://github.com/Sanpero45/mots-magiques
+(en ligne : https://sanpero45.github.io/mots-magiques/). L'ancienne adresse
+`mots-magiques/` de ce dépôt redirige vers la nouvelle.
