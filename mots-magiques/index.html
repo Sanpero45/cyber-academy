@@ -677,7 +677,7 @@
     <div class="card">
       <h2>☁️ Sauvegarde</h2>
       <p class="cloudline" style="font-weight:700"></p>
-      <p class="muted" style="margin:0">Les profils, les étoiles, les héros, les progrès et les listes de mots sont enregistrés
+      <p class="muted" id="cloudHelp" style="margin:0">Les profils, les étoiles, les héros, les progrès et les listes de mots sont enregistrés
         sur votre compte claude.ai : ouvrez le jeu avec ce même compte sur l'ordinateur ou le téléphone pour tout retrouver.
         La voix et le son restent réglés appareil par appareil.</p>
     </div>
@@ -776,6 +776,7 @@ function setCloud(st) {
     full: '⚠️ La sauvegarde en ligne est pleine. Les progrès restent enregistrés sur cet appareil.'
   }[st];
   document.querySelectorAll('.cloudline').forEach(el => { el.textContent = txt; });
+  const help = $('#cloudHelp'); if (help) help.hidden = st !== 'ok' && st !== 'wait';
 }
 function schedulePush() {
   if (!cloud) return;
@@ -791,7 +792,10 @@ async function push() {
     await cloud.set({ json: JSON.stringify(shared()), savedAt: state.savedAt || Date.now() });
     setCloud('ok');
   } catch (e) {
-    setCloud(e && e.code === 'quota_exceeded' ? 'full' : 'err');
+    const code = e && e.code;
+    // invité sans droit d'écriture (autre parent qui a reçu le lien) : tout reste sur l'appareil, sans alerte
+    if (code === 'invalid_argument' || code === 'not_granted' || code === 'revoked') { cloud = null; setCloud('local'); }
+    else setCloud(code === 'quota_exceeded' ? 'full' : 'err');
   }
   pushing = false;
   if (pushAgain) { pushAgain = false; push(); }
