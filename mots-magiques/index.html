@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Mots Magiques">
 <title>Les Mots Magiques</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
   /* Mise en page : une colonne centrée, cartes blanches sur fond ciel pointillé,
      barre d'onglets en bas comme une appli. Couleurs vives par jeu, pièges en gris (muettes) / bleu / orange, rouge réservé aux erreurs. */
@@ -2461,6 +2464,10 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
 if (hasTTS) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
 openProfiles();
 initCloud();
+// Sur le site web (GitHub Pages) : jeu utilisable sans internet et installable comme une appli.
+if ('serviceWorker' in navigator && location.protocol === 'https:' && location.hostname.endsWith('github.io')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 // pour les tests automatiques
 window.__mots = { parseEntry, parseList, variants, avatarSVG, CATALOG, findGroups };
 })();
